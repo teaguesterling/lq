@@ -50,6 +50,8 @@ from typing import Any
 import duckdb
 import pandas as pd
 
+from lq.query import LogQuery, LogStore
+
 
 # ============================================================================
 # Result Types
@@ -1191,6 +1193,8 @@ def query_source(
 ) -> pd.DataFrame:
     """Query a log file directly or the stored lq_events.
 
+    Uses the LogQuery API for cleaner query building.
+
     Args:
         source: Path to log file(s) or None to query stored data
         select: Columns to select (comma-separated) or None for all
@@ -1209,41 +1213,28 @@ def query_source(
             raise FileNotFoundError(f"File not found: {source}")
 
         try:
-            conn = ConnectionFactory.create(
-                load_schema=False,
-                require_duck_hunt=True,
-            )
+            query = LogQuery.from_file(source_path, format=log_format)
         except duckdb.Error:
             print("Error: duck_hunt extension required for querying files directly.", file=sys.stderr)
             print("Run 'lq init' to install required extensions.", file=sys.stderr)
             print(f"Or import the file first: lq import {source}", file=sys.stderr)
             raise
-
-        # Build SELECT clause
-        select_clause = select if select else "*"
-
-        # Build query
-        sql = f"SELECT {select_clause} FROM read_duck_hunt_log('{source_path}', '{log_format}')"
-        if where:
-            sql += f" WHERE {where}"
-        if order:
-            sql += f" ORDER BY {order}"
-
-        return conn.execute(sql).fetchdf()
     else:
         # Query stored data
         if lq_dir is None:
             lq_dir = ensure_initialized()
-        conn = get_connection(lq_dir)
+        store = LogStore(lq_dir)
+        query = store.events()
 
-        select_clause = select if select else "*"
-        sql = f"SELECT {select_clause} FROM lq_events"
-        if where:
-            sql += f" WHERE {where}"
-        if order:
-            sql += f" ORDER BY {order}"
+    # Apply query modifiers
+    if where:
+        query = query.filter(where)
+    if order:
+        query = query.order_by(*[col.strip() for col in order.split(",")])
+    if select:
+        query = query.select(*[col.strip() for col in select.split(",")])
 
-        return conn.execute(sql).fetchdf()
+    return query.df()
 
 
 def parse_filter_expression(expr: str, ignore_case: bool = False) -> str:

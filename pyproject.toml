@@ -29,6 +29,7 @@ classifiers = [
 dependencies = [
     "duckdb>=1.1.0",
     "pandas>=2.0.0",
+    "tabulate>=0.9.0",
 ]
 
 [project.optional-dependencies]
