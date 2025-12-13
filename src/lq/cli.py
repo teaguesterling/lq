@@ -849,37 +849,43 @@ def cmd_capture(args: argparse.Namespace) -> None:
 def cmd_status(args: argparse.Namespace) -> None:
     """Show status of all sources."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
+        store = LogStore(lq_dir)
+        conn = store.connection
+
         if args.verbose:
             result = conn.execute("FROM lq_status_verbose()").fetchdf()
         else:
             result = conn.execute("FROM lq_status()").fetchdf()
         print(result.to_string(index=False))
-    except duckdb.Error as e:
+    except duckdb.Error:
         # Fallback if macros aren't working
-        result = conn.execute(f"""
-            SELECT * FROM read_parquet('{lq_dir / LOGS_DIR}/**/*.parquet', hive_partitioning=true)
-            LIMIT 10
-        """).fetchdf()
+        store = LogStore(lq_dir)
+        result = store.events().limit(10).df()
         print(result.to_string(index=False))
 
 
 def cmd_errors(args: argparse.Namespace) -> None:
     """Show recent errors."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
-        if args.source:
-            sql = f"FROM lq_errors_for('{args.source}', {args.limit})"
-        elif args.compact:
-            sql = f"FROM lq_errors_compact({args.limit})"
-        else:
-            sql = f"FROM lq_errors({args.limit})"
+        store = LogStore(lq_dir)
+        query = store.errors()
 
-        result = conn.execute(sql).fetchdf()
+        # Filter by source if specified
+        if args.source:
+            query = query.filter(source_name=args.source)
+
+        # Order by run_id desc, event_id
+        query = query.order_by("run_id", desc=True).limit(args.limit)
+
+        # Select columns based on compact mode
+        if args.compact:
+            query = query.select("run_id", "event_id", "file_path", "line_number", "message")
+
+        result = query.df()
 
         if args.json:
             print(result.to_json(orient="records"))
@@ -893,10 +899,15 @@ def cmd_errors(args: argparse.Namespace) -> None:
 def cmd_warnings(args: argparse.Namespace) -> None:
     """Show recent warnings."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
-        result = conn.execute(f"FROM lq_warnings({args.limit})").fetchdf()
+        store = LogStore(lq_dir)
+        result = (
+            store.warnings()
+            .order_by("run_id", desc=True)
+            .limit(args.limit)
+            .df()
+        )
         print(result.to_string(index=False))
     except duckdb.Error as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -905,9 +916,11 @@ def cmd_warnings(args: argparse.Namespace) -> None:
 def cmd_summary(args: argparse.Namespace) -> None:
     """Show aggregate summary."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
+        store = LogStore(lq_dir)
+        conn = store.connection
+
         if args.latest:
             result = conn.execute("FROM lq_summary_latest()").fetchdf()
         else:
@@ -920,10 +933,10 @@ def cmd_summary(args: argparse.Namespace) -> None:
 def cmd_history(args: argparse.Namespace) -> None:
     """Show run history."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
-        result = conn.execute(f"FROM lq_history({args.limit})").fetchdf()
+        store = LogStore(lq_dir)
+        result = store.runs().head(args.limit)
         print(result.to_string(index=False))
     except duckdb.Error as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -932,11 +945,11 @@ def cmd_history(args: argparse.Namespace) -> None:
 def cmd_sql(args: argparse.Namespace) -> None:
     """Run arbitrary SQL."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     sql = " ".join(args.query)
     try:
-        result = conn.execute(sql).fetchdf()
+        store = LogStore(lq_dir)
+        result = store.connection.execute(sql).fetchdf()
         print(result.to_string(index=False))
     except duckdb.Error as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -995,7 +1008,6 @@ def cmd_prune(args: argparse.Namespace) -> None:
 def cmd_event(args: argparse.Namespace) -> None:
     """Show event details by reference."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
         ref = EventRef.parse(args.ref)
@@ -1004,30 +1016,26 @@ def cmd_event(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     try:
-        result = conn.execute(f"""
-            SELECT *
-            FROM lq_events
-            WHERE run_id = {ref.run_id} AND event_id = {ref.event_id}
-        """).fetchdf()
+        store = LogStore(lq_dir)
+        event = store.event(ref.run_id, ref.event_id)
 
-        if result.empty:
+        if event is None:
             print(f"Event {args.ref} not found", file=sys.stderr)
             sys.exit(1)
 
         if args.json:
-            print(result.to_json(orient="records", indent=2))
+            print(json.dumps(event, indent=2, default=str))
         else:
             # Pretty print event details
-            row = result.iloc[0]
             print(f"Event: {args.ref}")
-            print(f"  Source: {row.get('source_name', '?')}")
-            print(f"  Severity: {row.get('severity', '?')}")
-            print(f"  File: {row.get('file_path', '?')}:{row.get('line_number', '?')}")
-            print(f"  Message: {row.get('message', '?')}")
-            if pd.notna(row.get('error_fingerprint')):
-                print(f"  Fingerprint: {row.get('error_fingerprint')}")
-            if pd.notna(row.get('log_line_start')):
-                print(f"  Log lines: {row.get('log_line_start')}-{row.get('log_line_end')}")
+            print(f"  Source: {event.get('source_name', '?')}")
+            print(f"  Severity: {event.get('severity', '?')}")
+            print(f"  File: {event.get('file_path', '?')}:{event.get('line_number', '?')}")
+            print(f"  Message: {event.get('message', '?')}")
+            if event.get('error_fingerprint'):
+                print(f"  Fingerprint: {event.get('error_fingerprint')}")
+            if event.get('log_line_start'):
+                print(f"  Log lines: {event.get('log_line_start')}-{event.get('log_line_end')}")
 
     except duckdb.Error as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -1037,7 +1045,6 @@ def cmd_event(args: argparse.Namespace) -> None:
 def cmd_context(args: argparse.Namespace) -> None:
     """Show context lines around an event."""
     lq_dir = ensure_initialized()
-    conn = get_connection(lq_dir)
 
     try:
         ref = EventRef.parse(args.ref)
@@ -1045,19 +1052,18 @@ def cmd_context(args: argparse.Namespace) -> None:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Get event to find log line positions
     try:
-        result = conn.execute(f"""
-            SELECT log_line_start, log_line_end, source_name, message
-            FROM lq_events
-            WHERE run_id = {ref.run_id} AND event_id = {ref.event_id}
-        """).fetchone()
+        store = LogStore(lq_dir)
+        event = store.event(ref.run_id, ref.event_id)
 
-        if not result:
+        if event is None:
             print(f"Event {args.ref} not found", file=sys.stderr)
             sys.exit(1)
 
-        log_line_start, log_line_end, source_name, message = result
+        log_line_start = event.get('log_line_start')
+        log_line_end = event.get('log_line_end')
+        source_name = event.get('source_name')
+        message = event.get('message')
 
         if log_line_start is None:
             # For structured formats, show message instead
