@@ -430,10 +430,9 @@ class ConnectionFactory:
                     continue
                 try:
                     conn.execute(stmt)
-                except duckdb.Error as e:
-                    # Skip errors from missing functions (status_badge if duck_hunt not loaded)
-                    if "status_badge" not in str(e):
-                        pass  # Ignore other schema errors for now
+                except duckdb.Error:
+                    # Ignore schema errors (e.g., views on non-existent parquet files)
+                    pass
 
 
 def get_connection(lq_dir: Path | None = None) -> duckdb.DuckDBPyConnection:

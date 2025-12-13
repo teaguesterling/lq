@@ -22,6 +22,15 @@
 -- Base path for logs (can be overridden)
 CREATE OR REPLACE MACRO lq_base_path() AS '.lq/logs';
 
+-- Status badge based on error/warning counts
+-- Returns: '[FAIL]' if errors, '[WARN]' if warnings, '[ OK ]' otherwise
+CREATE OR REPLACE MACRO status_badge(error_count, warning_count) AS
+    CASE
+        WHEN error_count > 0 THEN '[FAIL]'
+        WHEN warning_count > 0 THEN '[WARN]'
+        ELSE '[ OK ]'
+    END;
+
 -- ============================================================================
 -- CORE VIEWS
 -- ============================================================================
