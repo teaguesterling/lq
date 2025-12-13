@@ -2,6 +2,20 @@
 lq - Log Query
 
 Capture and query build/test logs with DuckDB.
+
+Example usage:
+    from lq import LogStore, LogQuery
+
+    # Query stored events
+    store = LogStore.open()
+    errors = store.errors().filter(file_path="%main%").df()
+
+    # Query a log file directly
+    events = LogQuery.from_file("build.log").filter(severity="error").df()
 """
 
 __version__ = "0.1.0"
+
+from lq.query import LogQuery, LogStore, LogQueryGrouped
+
+__all__ = ["LogQuery", "LogStore", "LogQueryGrouped", "__version__"]
