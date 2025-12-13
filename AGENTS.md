@@ -18,6 +18,90 @@ Use lq when the user:
 - Needs to find patterns across multiple runs
 - Asks about errors, warnings, or test failures
 
+## How lq Builds a Repository
+
+lq maintains a **local repository** of all captured logs in `.lq/logs/`. Each action adds to this repository:
+
+```
+Action                      → Result
+─────────────────────────────────────────────────────
+lq run make                 → Creates run_id=1 with parsed events
+lq run make (again)         → Creates run_id=2 with new events
+lq import build.log         → Creates run_id=3 from file
+lq run pytest               → Creates run_id=4 with test results
+```
+
+### Storage Structure
+
+```
+.lq/
+├── logs/                          # All runs stored here
+│   └── date=2024-01-15/
+│       └── source=build/
+│           ├── 001_make_103000.parquet    # run_id=1
+│           ├── 002_make_110000.parquet    # run_id=2
+│           └── 003_pytest_140000.parquet  # run_id=4
+├── raw/                           # Optional raw logs (--keep-raw)
+└── commands.yaml                  # Registered commands
+```
+
+### Querying the Repository
+
+**Query a single file (not stored):**
+```bash
+lq q build.log                    # Parses file directly, not stored
+```
+
+**Query stored runs:**
+```bash
+lq errors                         # Recent errors from ALL runs
+lq q -f "severity='error'"        # All stored errors (no file = query repository)
+lq history                        # List all runs
+lq status                         # Summary of repository
+```
+
+### Cross-Run Analysis
+
+The repository enables powerful cross-run queries:
+
+```bash
+# Errors from the latest run
+lq q -f "run_id = (SELECT MAX(run_id) FROM lq_events)"
+
+# Compare latest run to previous
+lq sql "SELECT 'new' as status, message FROM lq_events
+        WHERE run_id = (SELECT MAX(run_id) FROM lq_events)
+          AND error_fingerprint NOT IN (
+              SELECT error_fingerprint FROM lq_events
+              WHERE run_id < (SELECT MAX(run_id) FROM lq_events))"
+
+# Error frequency over time
+lq sql "SELECT date, COUNT(*) as errors FROM lq_events
+        WHERE severity='error' GROUP BY date ORDER BY date"
+
+# Most common errors across all runs
+lq sql "SELECT error_fingerprint, COUNT(*) as occurrences,
+               ANY_VALUE(message) as example
+        FROM lq_events WHERE severity='error'
+        GROUP BY error_fingerprint ORDER BY occurrences DESC LIMIT 10"
+```
+
+### Repository Commands
+
+| Command | Description |
+|---------|-------------|
+| `lq status` | Overview of repository (runs, errors, date range) |
+| `lq history` | List all runs with timestamps and status |
+| `lq errors` | Recent errors across all runs |
+| `lq prune --older-than 30` | Remove runs older than 30 days |
+
+### Key Insight for Agents
+
+- **File queries** (`lq q file.log`) are one-shot, not stored
+- **Run captures** (`lq run cmd`) are stored with a `run_id`
+- **Repository queries** (`lq errors`, `lq q` without file) search all stored runs
+- Use `run_id` to correlate events to specific builds/tests
+
 ## Quick Reference
 
 ```bash
