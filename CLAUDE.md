@@ -11,12 +11,14 @@ This is the initial scaffolding for `lq` (Log Query) - a CLI tool for capturing,
 - Hive-partitioned parquet storage design
 - Basic error/warning parsing fallback
 - Integration hooks for duck_hunt extension
+- Pythonic query API (`LogQuery`, `LogStore`, `LogQueryGrouped`)
+- Structured output (JSON, Markdown, CSV)
+- Command registry for reusable build/test commands
+- Query and filter commands for direct log file inspection
+- 151 unit tests
+- Comprehensive documentation (README, docs/)
 
 ### TODO
-- [ ] Test the package installation (`pip install -e .`)
-- [ ] Test all CLI commands
-- [ ] Fix schema.sql to work without duck_hunt's `status_badge` function
-- [ ] Add unit tests
 - [ ] Add `lq serve` command for MCP server mode
 - [ ] Consider integration with duckdb_mcp for ATTACH/DETACH workflow
 
@@ -42,9 +44,8 @@ lq (Python CLI)
 
 ## Integration Points
 
-- **duck_hunt extension**: For enhanced log parsing
+- **duck_hunt extension**: For enhanced log parsing (60+ formats)
 - **duckdb_mcp**: For MCP server integration (agents can query logs)
-- **status_badge function**: From duck_hunt, provides `[ OK ]`/`[FAIL]`/etc. badges
 
 ## Related Projects
 
