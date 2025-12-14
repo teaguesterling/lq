@@ -182,20 +182,20 @@ Usage: `lq run test file=tests/unit/`
 
 ## Implementation Plan
 
-### Phase 1: Capture Flag
-- [ ] Add `capture` field to `RegisteredCommand`
-- [ ] Add `--capture` / `--no-capture` flags to `lq run`
-- [ ] Implement no-capture path in `cmd_run()`
-- [ ] Update tests
+### Phase 1: Capture Flag ✅
+- [x] Add `capture` field to `RegisteredCommand`
+- [x] Add `--capture` / `--no-capture` flags to `lq run`
+- [x] Implement no-capture path in `cmd_run()`
+- [x] Update tests
 
-### Phase 2: Init Enhancements
-- [ ] Add `--project` and `--namespace` args to `lq init`
-- [ ] Add `--detect` flag with detection logic
-- [ ] Add `--yes` flag for non-interactive mode
-- [ ] Update tests
+### Phase 2: Init Enhancements ✅
+- [x] Add `--project` and `--namespace` args to `lq init`
+- [x] Add `--detect` flag with detection logic
+- [x] Add `--yes` flag for non-interactive mode
+- [x] Detected: Makefile, yarn/npm, pyproject.toml, Cargo.toml, go.mod, CMakeLists.txt, configure, Gradle, Maven, Docker
 
-### Phase 3: MCP Tools
-- [ ] Add `register_command` tool
-- [ ] Add `unregister_command` tool
-- [ ] Update MCP docs
-- [ ] Update tests
+### Phase 3: MCP Tools ✅
+- [x] Add `register_command` tool
+- [x] Add `unregister_command` tool
+- [x] Add `list_commands` tool
+- [x] Update docs
