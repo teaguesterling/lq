@@ -23,6 +23,23 @@ The lq MCP server exposes:
 
 All tools are namespaced under the `lq` server, so `run` becomes `lq.run` when accessed by agents.
 
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `run` | Run a command and capture output |
+| `query` | Query logs with SQL |
+| `errors` | Get recent errors |
+| `warnings` | Get recent warnings |
+| `event` | Get event details |
+| `context` | Get log context around event |
+| `status` | Get status summary |
+| `history` | Get run history |
+| `diff` | Compare errors between runs |
+| `register_command` | Register a new command |
+| `unregister_command` | Remove a registered command |
+| `list_commands` | List all registered commands |
+
 ---
 
 ## Tools
@@ -380,6 +397,119 @@ Compare errors between two runs.
       "message": "undefined function"
     }
   ]
+}
+```
+
+---
+
+### register_command
+
+Register a new command in the command registry.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | Yes | Command name (e.g., "build", "test") |
+| `cmd` | string | Yes | Shell command to execute |
+| `description` | string | No | Human-readable description |
+| `timeout` | number | No | Timeout in seconds (default: 300) |
+| `capture` | boolean | No | Whether to capture and parse logs (default: true) |
+| `force` | boolean | No | Overwrite existing command (default: false) |
+
+**Returns:**
+
+```json
+{
+  "success": true,
+  "message": "Registered command 'build': make -j8"
+}
+```
+
+**Example:**
+
+```json
+{
+  "tool": "register_command",
+  "arguments": {
+    "name": "build",
+    "cmd": "make -j8",
+    "description": "Build the project",
+    "timeout": 300,
+    "capture": true
+  }
+}
+```
+
+---
+
+### unregister_command
+
+Remove a command from the registry.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | Yes | Command name to remove |
+
+**Returns:**
+
+```json
+{
+  "success": true,
+  "message": "Unregistered command 'build'"
+}
+```
+
+**Example:**
+
+```json
+{
+  "tool": "unregister_command",
+  "arguments": {
+    "name": "build"
+  }
+}
+```
+
+---
+
+### list_commands
+
+List all registered commands.
+
+**Parameters:** None
+
+**Returns:**
+
+```json
+{
+  "commands": {
+    "build": {
+      "cmd": "make -j8",
+      "description": "Build the project",
+      "timeout": 300,
+      "format": "auto",
+      "capture": true
+    },
+    "test": {
+      "cmd": "pytest -v",
+      "description": "Run tests",
+      "timeout": 600,
+      "format": "auto",
+      "capture": true
+    }
+  }
+}
+```
+
+**Example:**
+
+```json
+{
+  "tool": "list_commands",
+  "arguments": {}
 }
 ```
 
