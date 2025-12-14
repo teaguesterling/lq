@@ -455,9 +455,23 @@ Pre-built prompts that guide agents through common workflows:
 4. Agent follows the instructions in the prompt systematically
 ```
 
+### Quick Setup
+
+Initialize a project with MCP support:
+
+```bash
+lq init --mcp
+```
+
+This creates:
+- `.lq/` directory with schema and storage
+- `.mcp.json` file for MCP server discovery
+
+The `.mcp.json` file enables automatic MCP server discovery by compatible clients.
+
 ### Claude Desktop Configuration
 
-Add to your Claude Desktop MCP settings (`~/.config/claude/claude_desktop_config.json`):
+For Claude Desktop, add to your MCP settings (`~/.config/claude/claude_desktop_config.json`):
 
 ```json
 {
@@ -470,6 +484,8 @@ Add to your Claude Desktop MCP settings (`~/.config/claude/claude_desktop_config
   }
 }
 ```
+
+Or use the project's `.mcp.json` directly if your client supports project-local MCP configuration.
 
 ### Programmatic MCP Client Example
 

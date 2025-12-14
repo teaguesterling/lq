@@ -2,7 +2,7 @@
 lq CLI - Log Query command-line interface.
 
 Usage:
-    lq init                          Initialize .lq directory
+    lq init [--mcp]                  Initialize .lq directory
     lq run <command>                 Run command and capture output
     lq import <file> [--name NAME]   Import existing log file
     lq capture [--name NAME]         Capture from stdin
@@ -595,14 +595,32 @@ def parse_log_content(content: str, format_hint: str = "auto") -> list[dict[str,
 # Commands
 # ============================================================================
 
+MCP_CONFIG_FILE = ".mcp.json"
+
+MCP_CONFIG_TEMPLATE = """{
+  "mcpServers": {
+    "lq": {
+      "command": "lq",
+      "args": ["serve"]
+    }
+  }
+}
+"""
+
+
 def cmd_init(args: argparse.Namespace) -> None:
     """Initialize .lq directory and install required extensions."""
     lq_dir = Path.cwd() / LQ_DIR
+    mcp_config_path = Path.cwd() / MCP_CONFIG_FILE
+    create_mcp = getattr(args, "mcp", False)
 
     if lq_dir.exists():
         print(f".lq already exists at {lq_dir}")
         # Still try to install extensions if they're missing
         _install_extensions()
+        # Check if user wants to add MCP config
+        if create_mcp and not mcp_config_path.exists():
+            _write_mcp_config(mcp_config_path)
         return
 
     # Create directories
@@ -623,6 +641,16 @@ def cmd_init(args: argparse.Namespace) -> None:
 
     # Install required extensions
     _install_extensions()
+
+    # Create MCP config if requested
+    if create_mcp:
+        _write_mcp_config(mcp_config_path)
+
+
+def _write_mcp_config(path: Path) -> None:
+    """Write MCP configuration file."""
+    path.write_text(MCP_CONFIG_TEMPLATE)
+    print(f"  {path.name}   - MCP server configuration")
 
 
 def _install_extensions() -> None:
@@ -1458,6 +1486,11 @@ def main() -> None:
 
     # init
     p_init = subparsers.add_parser("init", help="Initialize .lq directory")
+    p_init.add_argument(
+        "--mcp", "-m",
+        action="store_true",
+        help="Create .mcp.json for MCP server discovery"
+    )
     p_init.set_defaults(func=cmd_init)
 
     # run
