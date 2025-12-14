@@ -17,9 +17,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 from fastmcp import FastMCP
 
 from lq.query import LogStore
+
+
+def _to_json_safe(value: Any) -> Any:
+    """Convert pandas NA/NaT values to None for JSON serialization."""
+    if pd.isna(value):
+        return None
+    return value
 
 # Create the MCP server
 mcp = FastMCP(
@@ -382,22 +390,22 @@ def _history_impl(limit: int = 20, source: str | None = None) -> dict[str, Any]:
 
             runs.append({
                 "run_id": int(row["run_id"]),
-                "source_name": row.get("source_name", "unknown"),
+                "source_name": _to_json_safe(row.get("source_name")) or "unknown",
                 "status": status_str,
                 "error_count": error_count,
                 "warning_count": warning_count,
                 "started_at": str(row.get("started_at", "")),
-                "exit_code": int(row.get("exit_code", 0)) if row.get("exit_code") is not None else None,
-                "command": row.get("command"),
-                "cwd": row.get("cwd"),
-                "executable_path": row.get("executable_path"),
-                "hostname": row.get("hostname"),
-                "platform": row.get("platform"),
-                "arch": row.get("arch"),
-                "git_commit": row.get("git_commit"),
-                "git_branch": row.get("git_branch"),
-                "git_dirty": row.get("git_dirty"),
-                "ci": row.get("ci"),
+                "exit_code": int(row["exit_code"]) if not pd.isna(row.get("exit_code")) else None,
+                "command": _to_json_safe(row.get("command")),
+                "cwd": _to_json_safe(row.get("cwd")),
+                "executable_path": _to_json_safe(row.get("executable_path")),
+                "hostname": _to_json_safe(row.get("hostname")),
+                "platform": _to_json_safe(row.get("platform")),
+                "arch": _to_json_safe(row.get("arch")),
+                "git_commit": _to_json_safe(row.get("git_commit")),
+                "git_branch": _to_json_safe(row.get("git_branch")),
+                "git_dirty": _to_json_safe(row.get("git_dirty")),
+                "ci": _to_json_safe(row.get("ci")),
             })
 
         return {"runs": runs}

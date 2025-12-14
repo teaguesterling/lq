@@ -618,7 +618,7 @@ class LogStore:
         """Get summary of all runs.
 
         Returns:
-            DataFrame with run_id, source_name, started_at, etc.
+            DataFrame with run_id, source_name, started_at, metadata, etc.
         """
         self._ensure_schema()
         return self._conn.sql("""
@@ -629,7 +629,16 @@ class LogStore:
                 command,
                 started_at,
                 completed_at,
-                exit_code
+                exit_code,
+                cwd,
+                executable_path,
+                hostname,
+                platform,
+                arch,
+                git_commit,
+                git_branch,
+                git_dirty,
+                ci
             FROM lq_events
             ORDER BY run_id DESC
         """).df()

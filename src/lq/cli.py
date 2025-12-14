@@ -597,48 +597,52 @@ def get_next_run_id(lq_dir: Path) -> int:
 # ============================================================================
 
 # Canonical schema columns - always written in this order for consistency
-PARQUET_SCHEMA_COLUMNS = [
+# Format: (column_name, sql_type) - sql_type used for explicit casting
+PARQUET_SCHEMA = [
     # Run metadata
-    "run_id",
-    "source_name",
-    "source_type",
-    "command",
-    "started_at",
-    "completed_at",
-    "exit_code",
+    ("run_id", "BIGINT"),
+    ("source_name", "VARCHAR"),
+    ("source_type", "VARCHAR"),
+    ("command", "VARCHAR"),
+    ("started_at", "VARCHAR"),
+    ("completed_at", "VARCHAR"),
+    ("exit_code", "BIGINT"),
     # Execution context
-    "cwd",
-    "executable_path",
-    "environment",  # MAP(VARCHAR, VARCHAR) of captured env vars
+    ("cwd", "VARCHAR"),
+    ("executable_path", "VARCHAR"),
+    ("environment", "MAP(VARCHAR, VARCHAR)"),
     # System context
-    "hostname",
-    "platform",
-    "arch",
+    ("hostname", "VARCHAR"),
+    ("platform", "VARCHAR"),
+    ("arch", "VARCHAR"),
     # Git context
-    "git_commit",
-    "git_branch",
-    "git_dirty",
+    ("git_commit", "VARCHAR"),
+    ("git_branch", "VARCHAR"),
+    ("git_dirty", "BOOLEAN"),
     # CI context
-    "ci",  # MAP(VARCHAR, VARCHAR) with provider-specific fields
+    ("ci", "MAP(VARCHAR, VARCHAR)"),
     # Event identification
-    "event_id",
-    "severity",
+    ("event_id", "BIGINT"),
+    ("severity", "VARCHAR"),
     # Location
-    "file_path",
-    "line_number",
-    "column_number",
+    ("file_path", "VARCHAR"),
+    ("line_number", "BIGINT"),
+    ("column_number", "BIGINT"),
     # Content
-    "message",
-    "raw_text",
+    ("message", "VARCHAR"),
+    ("raw_text", "VARCHAR"),
     # Classification
-    "tool_name",
-    "category",
-    "error_code",
-    "error_fingerprint",
+    ("tool_name", "VARCHAR"),
+    ("category", "VARCHAR"),
+    ("error_code", "VARCHAR"),
+    ("error_fingerprint", "VARCHAR"),
     # Log position
-    "log_line_start",
-    "log_line_end",
+    ("log_line_start", "BIGINT"),
+    ("log_line_end", "BIGINT"),
 ]
+
+# Just the column names for iteration
+PARQUET_SCHEMA_COLUMNS = [col for col, _ in PARQUET_SCHEMA]
 
 
 def write_run_parquet(
@@ -689,22 +693,27 @@ def write_run_parquet(
             enriched[col] = val
         enriched_events.append(enriched)
 
-    # Write using DuckDB with explicit MAP types
+    # Write using DuckDB relation API with explicit type casting
     conn = duckdb.connect(":memory:")
     df = pd.DataFrame(enriched_events, columns=PARQUET_SCHEMA_COLUMNS)
-    conn.register("events_df", df)
 
-    # Build SELECT with map_from_entries for MAP columns
-    select_cols = []
-    for col in PARQUET_SCHEMA_COLUMNS:
+    # Create relation from dataframe
+    rel = conn.from_df(df)
+
+    # Build projection expressions with explicit type casts
+    # This ensures consistent schema even when values are NULL
+    projections = []
+    for col, sql_type in PARQUET_SCHEMA:
         if col in map_columns:
-            select_cols.append(f"map_from_entries({col}) AS {col}")
+            # MAP columns need map_from_entries conversion
+            projections.append(f"map_from_entries({col})::MAP(VARCHAR, VARCHAR) AS {col}")
         else:
-            select_cols.append(col)
+            # Cast all other columns to their explicit types
+            projections.append(f"{col}::{sql_type} AS {col}")
 
-    create_sql = f"CREATE TABLE events AS SELECT {', '.join(select_cols)} FROM events_df"
-    conn.execute(create_sql)
-    conn.execute(f"COPY events TO '{filepath}' (FORMAT PARQUET)")
+    # Apply projection and write to parquet
+    typed_rel = rel.project(", ".join(projections))
+    typed_rel.write_parquet(str(filepath))
     conn.close()
 
     return filepath
