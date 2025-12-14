@@ -7,6 +7,7 @@ that are shared across multiple commands.
 
 from __future__ import annotations
 
+import json
 import os
 import platform
 import re
@@ -98,7 +99,6 @@ class RunResult:
 
     def to_json(self, include_warnings: bool = False) -> str:
         """Convert to JSON string."""
-        import json
         data = {
             "run_id": self.run_id,
             "command": self.command,

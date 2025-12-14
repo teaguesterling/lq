@@ -307,9 +307,9 @@ LOAD duck_hunt;
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sql", delete=False) as f:
         f.write(init_sql)
-        init_file = f.name
+        init_file_name = f.name
 
     try:
-        subprocess.run(["duckdb", "-init", init_file])
+        subprocess.run(["duckdb", "-init", init_file_name])
     finally:
-        Path(init_file).unlink()
+        Path(init_file_name).unlink(missing_ok=True)
