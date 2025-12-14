@@ -57,3 +57,5 @@ nav:
       - Python API: python-api.md
       - Integration: integration.md
       - MCP Server: mcp.md
+  - Development:
+      - CI/CD Setup: ci-cd.md
