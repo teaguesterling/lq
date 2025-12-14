@@ -38,6 +38,7 @@ Filter examples:
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 
 from lq.commands import (
@@ -137,7 +138,19 @@ __all__ = [
 ]
 
 
+def _setup_logging() -> None:
+    """Configure the lq logger with stderr handler."""
+    lq_logger = logging.getLogger("lq")
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    lq_logger.addHandler(handler)
+    # Default level is WARNING (quiet), changed by --summary or --verbose
+    lq_logger.setLevel(logging.WARNING)
+
+
 def main() -> None:
+    _setup_logging()
+
     parser = argparse.ArgumentParser(
         description="lq - Log Query CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -206,6 +219,12 @@ def main() -> None:
     p_run.add_argument("--json", "-j", action="store_true", help="Output structured JSON result")
     p_run.add_argument("--markdown", "-m", action="store_true", help="Output markdown summary")
     p_run.add_argument("--quiet", "-q", action="store_true", help="Suppress streaming output")
+    p_run.add_argument(
+        "--summary", "-s", action="store_true", help="Show brief summary (errors/warnings count)"
+    )
+    p_run.add_argument(
+        "--verbose", "-v", action="store_true", help="Show all lq status messages"
+    )
     p_run.add_argument(
         "--include-warnings",
         "-w",

@@ -7,6 +7,7 @@ Handles running commands, importing logs, and capturing stdin.
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import platform
 import socket
@@ -30,6 +31,9 @@ from lq.commands.core import (
     parse_log_content,
     write_run_parquet,
 )
+
+# Logger for lq status messages
+logger = logging.getLogger("lq")
 
 
 def _find_similar_commands(name: str, registered: list[str], max_results: int = 3) -> list[str]:
@@ -109,15 +113,13 @@ def cmd_run(args: argparse.Namespace) -> None:
             and "\\" not in first_arg
             and registered_commands
         ):
-            # Find similar command names
+            # Find similar command names and warn (always show, regardless of verbosity)
             similar = _find_similar_commands(first_arg, list(registered_commands.keys()))
             if similar:
-                print(
-                    f"Warning: '{first_arg}' is not a registered command.",
-                    file=sys.stderr,
-                )
-                print(f"Did you mean: {', '.join(similar)}?", file=sys.stderr)
-                print(f"Running '{first_arg}' as shell command...", file=sys.stderr)
+                # Use WARNING level so it shows even in quiet mode
+                logger.warning(f"'{first_arg}' is not a registered command.")
+                logger.warning(f"Did you mean: {', '.join(similar)}?")
+                logger.warning(f"Running '{first_arg}' as shell command...")
 
         # Use literal command
         command = " ".join(args.command)
@@ -142,12 +144,25 @@ def cmd_run(args: argparse.Namespace) -> None:
     ci_info = capture_ci_info()
 
     # Determine output mode
+    # --json/--markdown produce structured output (no streaming, no lq messages)
+    # --quiet suppresses command output streaming
+    # --summary shows brief summary at end (INFO level)
+    # --verbose shows all lq messages (DEBUG level)
     structured_output = args.json or args.markdown
+    show_summary = getattr(args, "summary", False)
+    verbose = getattr(args, "verbose", False)
     quiet = args.quiet or structured_output
 
-    if not quiet:
-        print(f"[lq] Running: {command}", file=sys.stderr)
-        print(f"[lq] Run ID: {run_id}", file=sys.stderr)
+    # Configure logger based on verbosity
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+    elif show_summary:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARNING)
+
+    logger.debug(f"Running: {command}")
+    logger.debug(f"Run ID: {run_id}")
 
     # Run command, capturing output
     process = subprocess.Popen(
@@ -172,10 +187,7 @@ def cmd_run(args: argparse.Namespace) -> None:
 
     # No-capture mode: just run and exit with the command's exit code
     if not should_capture:
-        if not quiet:
-            print(
-                f"\n[lq] Completed in {duration_sec:.1f}s (exit code {exit_code})", file=sys.stderr
-            )
+        logger.debug(f"Completed in {duration_sec:.1f}s (exit code {exit_code})")
         sys.exit(exit_code)
 
     # Always save raw output when using structured output (needed for context)
@@ -262,13 +274,13 @@ def cmd_run(args: argparse.Namespace) -> None:
     elif args.markdown:
         print(result.to_markdown(include_warnings=args.include_warnings))
     else:
-        # Traditional output
-        print(
-            f"\n[lq] Captured {len(events)} events "
-            f"({len(error_events)} errors, {len(warning_events)} warnings)",
-            file=sys.stderr,
-        )
-        print(f"[lq] Saved to {filepath}", file=sys.stderr)
+        # Log summary based on verbosity level
+        if error_events:
+            logger.info(f"Errors: {len(error_events)}")
+        if warning_events:
+            logger.info(f"Warnings: {len(warning_events)}")
+        logger.debug(f"Duration: {duration_sec:.1f}s")
+        logger.debug(f"Saved: {filepath}")
 
     sys.exit(exit_code)
 
