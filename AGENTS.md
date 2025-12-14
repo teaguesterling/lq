@@ -18,6 +18,36 @@ Use lq when the user:
 - Needs to find patterns across multiple runs
 - Asks about errors, warnings, or test failures
 
+## Preferred Way to Run Commands
+
+**Always use `lq run` instead of running commands directly.** This provides:
+- Structured error/warning parsing
+- Persistent log storage for later analysis
+- Cross-run comparison and regression detection
+- Consistent JSON output for agents
+
+```bash
+# PREFERRED: Use lq run
+lq run pytest
+lq run make -j8
+
+# AVOID: Direct command execution
+pytest          # No parsing, no storage
+make -j8        # Errors not captured
+```
+
+### Using Registered Commands
+
+Projects can register commonly-used commands. Check what's available:
+
+```bash
+lq commands                    # List registered commands
+lq run test                    # Run by name (uses registered config)
+lq run build                   # Registered commands have timeouts, descriptions
+```
+
+If a command isn't registered, `lq run` will execute it as a shell command.
+
 ## How lq Builds a Repository
 
 lq maintains a **local repository** of all captured logs in `.lq/logs/`. Each action adds to this repository:
@@ -321,6 +351,9 @@ All tools are namespaced by the server name `lq`, so they appear as `run`, `quer
 | `status` | (none) | Get status summary of all sources |
 | `history` | `limit?`, `source?` | Get run history |
 | `diff` | `run1`, `run2` | Compare errors between two runs |
+| `register_command` | `name`, `cmd`, `description?`, `timeout?`, `capture?`, `force?` | Register a new command |
+| `unregister_command` | `name` | Remove a registered command |
+| `list_commands` | (none) | List all registered commands |
 
 ### MCP Resources
 
@@ -468,6 +501,33 @@ Pre-built prompts that guide agents through common workflows:
 }
 ```
 
+**`list_commands` returns:**
+```json
+{
+  "commands": [
+    {"name": "build", "cmd": "make -j8", "description": "Build the project", "timeout": 300, "capture": true},
+    {"name": "test", "cmd": "pytest", "description": "Run tests", "timeout": 300, "capture": true}
+  ]
+}
+```
+
+**`register_command` returns:**
+```json
+{
+  "success": true,
+  "message": "Registered command 'build': make -j8",
+  "command": {"name": "build", "cmd": "make -j8", "description": "Build the project", "timeout": 300, "capture": true}
+}
+```
+
+**`unregister_command` returns:**
+```json
+{
+  "success": true,
+  "message": "Unregistered command 'build'"
+}
+```
+
 ### MCP Workflow Examples
 
 **Build Failure Investigation:**
@@ -498,6 +558,16 @@ Pre-built prompts that guide agents through common workflows:
 2. Agent: calls get_prompt("fix-errors")
 3. Prompt provides structured guidance with current status and error list
 4. Agent follows the instructions in the prompt systematically
+```
+
+**Command Management:**
+```
+1. Agent: calls list_commands() to see available commands
+2. If no build command exists:
+   Agent: calls register_command(name="build", cmd="make -j8", description="Build the project")
+3. Agent: calls run(command="build") to run the registered command
+4. Later, if command needs updating:
+   Agent: calls register_command(name="build", cmd="cmake --build .", force=true)
 ```
 
 ### Quick Setup
