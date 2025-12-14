@@ -45,6 +45,23 @@ lq run pytest               → Creates run_id=4 with test results
 └── commands.yaml                  # Registered commands
 ```
 
+### Run Metadata
+
+Each `lq run` automatically captures execution context:
+
+| Field | Description |
+|-------|-------------|
+| `hostname` | Machine name |
+| `platform` | OS (Linux, Darwin, Windows) |
+| `arch` | Architecture (x86_64, arm64) |
+| `git_commit` | Current commit SHA |
+| `git_branch` | Current branch |
+| `git_dirty` | Uncommitted changes present |
+| `cwd` | Working directory |
+| `ci` | CI provider info (auto-detected) |
+
+This metadata helps correlate errors across different machines, branches, or CI runs.
+
 ### Querying the Repository
 
 **Query a single file (not stored):**
@@ -371,7 +388,15 @@ Pre-built prompts that guide agents through common workflows:
   "line_number": 15,
   "message": "undefined variable 'foo'",
   "raw_text": "src/main.c:15:5: error: use of undeclared identifier 'foo'",
-  "error_fingerprint": "abc123..."
+  "error_fingerprint": "abc123...",
+  "cwd": "/home/user/project",
+  "hostname": "dev-machine",
+  "platform": "Linux",
+  "arch": "x86_64",
+  "git_commit": "abc1234",
+  "git_branch": "main",
+  "git_dirty": false,
+  "ci": null
 }
 ```
 
@@ -399,6 +424,26 @@ Pre-built prompts that guide agents through common workflows:
       "warning_count": 5,
       "last_run": "2024-01-15T10:30:00",
       "run_id": 1
+    }
+  ]
+}
+```
+
+**`history` returns run metadata:**
+```json
+{
+  "runs": [
+    {
+      "run_id": 1,
+      "source_name": "make",
+      "status": "FAIL",
+      "hostname": "dev-machine",
+      "platform": "Linux",
+      "arch": "x86_64",
+      "git_commit": "abc1234",
+      "git_branch": "main",
+      "git_dirty": false,
+      "ci": null
     }
   ]
 }

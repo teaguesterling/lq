@@ -9,6 +9,8 @@ A CLI tool for capturing, querying, and analyzing build/test logs using DuckDB.
 - **Structured output** in JSON, CSV, or Markdown for agent integration
 - **Event references** for drilling into specific errors
 - **Command registry** for reusable build/test commands
+- **Run metadata** - captures git, environment, system, and CI context
+- **MCP server** for AI agent integration
 - **60+ log formats** supported via duck_hunt extension
 
 ## Installation
@@ -19,7 +21,8 @@ pip install lq
 
 Initialize in your project (installs duck_hunt extension):
 ```bash
-lq init
+lq init         # Basic init
+lq init --mcp   # Also create .mcp.json for AI agents
 ```
 
 ## Quick Start
@@ -179,6 +182,39 @@ lq run test
 # List registered commands
 lq commands
 ```
+
+## Run Metadata
+
+Each `lq run` automatically captures execution context:
+
+| Field | Description |
+|-------|-------------|
+| `hostname` | Machine name |
+| `platform` | OS (Linux, Darwin, Windows) |
+| `arch` | Architecture (x86_64, arm64) |
+| `git_commit` | Current commit SHA |
+| `git_branch` | Current branch |
+| `git_dirty` | Uncommitted changes present |
+| `environment` | Captured env vars (PATH, VIRTUAL_ENV, etc.) |
+| `ci` | CI provider info (auto-detected) |
+
+Query metadata with SQL:
+```bash
+lq sql "SELECT hostname, git_branch, environment['VIRTUAL_ENV'] FROM lq_events"
+```
+
+## MCP Server
+
+lq includes an MCP server for AI agent integration:
+
+```bash
+lq serve                    # stdio transport (Claude Desktop)
+lq serve --transport sse    # HTTP/SSE transport
+```
+
+Tools available: `run`, `query`, `errors`, `warnings`, `event`, `context`, `status`, `history`, `diff`
+
+See [MCP Guide](docs/mcp.md) for details.
 
 ## Global Options
 

@@ -204,9 +204,19 @@ Get details for a specific event by reference.
   "error_fingerprint": "gcc_error_a1b2c3d4",
   "raw_text": "src/main.c:15:5: error: undefined variable 'foo'",
   "log_line_start": 42,
-  "log_line_end": 42
+  "log_line_end": 42,
+  "cwd": "/home/user/project",
+  "hostname": "dev-machine",
+  "platform": "Linux",
+  "arch": "x86_64",
+  "git_commit": "abc1234",
+  "git_branch": "main",
+  "git_dirty": false,
+  "ci": null
 }
 ```
+
+The event includes run metadata for context (see `history` tool for field descriptions).
 
 **Example:**
 
@@ -306,11 +316,32 @@ Get run history.
       "warning_count": 5,
       "started_at": "2024-01-15T10:30:00Z",
       "duration_seconds": 12.5,
-      "exit_code": 2
+      "exit_code": 2,
+      "cwd": "/home/user/project",
+      "hostname": "dev-machine",
+      "platform": "Linux",
+      "arch": "x86_64",
+      "git_commit": "abc1234",
+      "git_branch": "main",
+      "git_dirty": false,
+      "ci": null
     }
   ]
 }
 ```
+
+Run metadata fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cwd` | string | Working directory |
+| `hostname` | string | Machine name |
+| `platform` | string | OS (Linux, Darwin, Windows) |
+| `arch` | string | Architecture (x86_64, arm64) |
+| `git_commit` | string | HEAD commit SHA |
+| `git_branch` | string | Current branch |
+| `git_dirty` | boolean | Uncommitted changes present |
+| `ci` | object | CI provider info (if running in CI) |
 
 ---
 
