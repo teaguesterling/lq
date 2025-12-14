@@ -15,11 +15,11 @@ This is the initial scaffolding for `lq` (Log Query) - a CLI tool for capturing,
 - Structured output (JSON, Markdown, CSV)
 - Command registry for reusable build/test commands
 - Query and filter commands for direct log file inspection
-- 151 unit tests
+- MCP server (`lq serve`) for AI agent integration
+- 180 unit tests
 - Comprehensive documentation (README, docs/)
 
 ### TODO
-- [ ] Add `lq serve` command for MCP server mode
 - [ ] Consider integration with duckdb_mcp for ATTACH/DETACH workflow
 
 ## Architecture
