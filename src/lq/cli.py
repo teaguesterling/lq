@@ -467,12 +467,46 @@ def get_next_run_id(lq_dir: Path) -> int:
 # Parquet Writing
 # ============================================================================
 
+# Canonical schema columns - always written in this order for consistency
+PARQUET_SCHEMA_COLUMNS = [
+    # Run metadata
+    "run_id",
+    "source_name",
+    "source_type",
+    "command",
+    "started_at",
+    "completed_at",
+    "exit_code",
+    # Event identification
+    "event_id",
+    "severity",
+    # Location
+    "file_path",
+    "line_number",
+    "column_number",
+    # Content
+    "message",
+    "raw_text",
+    # Classification
+    "tool_name",
+    "category",
+    "error_code",
+    "error_fingerprint",
+    # Log position
+    "log_line_start",
+    "log_line_end",
+]
+
+
 def write_run_parquet(
     events: list[dict[str, Any]],
     run_meta: dict[str, Any],
     lq_dir: Path,
 ) -> Path:
-    """Write events to a Hive-partitioned parquet file."""
+    """Write events to a Hive-partitioned parquet file.
+
+    Always writes all schema columns for consistency, even if values are None.
+    """
     # Determine partition path
     date_str = datetime.now().strftime("%Y-%m-%d")
     time_str = datetime.now().strftime("%H%M%S")
@@ -488,10 +522,11 @@ def write_run_parquet(
     filename = f"{run_id:03d}_{safe_name}_{time_str}.parquet"
     filepath = partition_dir / filename
 
-    # Add run metadata to each event
+    # Build enriched events with all schema columns
     enriched_events = []
     for event in events or [{}]:
-        enriched = {
+        # Merge run metadata and event data
+        merged = {
             "run_id": run_id,
             "source_name": run_meta.get("source_name"),
             "source_type": source_type,
@@ -501,12 +536,13 @@ def write_run_parquet(
             "exit_code": run_meta.get("exit_code"),
             **event,
         }
+        # Build row with all columns in canonical order (None for missing)
+        enriched = {col: merged.get(col) for col in PARQUET_SCHEMA_COLUMNS}
         enriched_events.append(enriched)
 
     # Write using DuckDB
     conn = duckdb.connect(":memory:")
-    # Register the list as a table-like object
-    df = pd.DataFrame(enriched_events)
+    df = pd.DataFrame(enriched_events, columns=PARQUET_SCHEMA_COLUMNS)
     conn.register("events_df", df)
     conn.execute("CREATE TABLE events AS SELECT * FROM events_df")
     conn.execute(f"COPY events TO '{filepath}' (FORMAT PARQUET)")
