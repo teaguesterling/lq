@@ -821,6 +821,8 @@ def cmd_init(args: argparse.Namespace) -> None:
     lq_dir = Path.cwd() / LQ_DIR
     mcp_config_path = Path.cwd() / MCP_CONFIG_FILE
     create_mcp = getattr(args, "mcp", False)
+    detect_commands = getattr(args, "detect", False)
+    auto_yes = getattr(args, "yes", False)
 
     if lq_dir.exists():
         print(f".lq already exists at {lq_dir}")
@@ -829,6 +831,9 @@ def cmd_init(args: argparse.Namespace) -> None:
         # Check if user wants to add MCP config
         if create_mcp and not mcp_config_path.exists():
             _write_mcp_config(mcp_config_path)
+        # Still allow command detection on existing projects
+        if detect_commands:
+            _detect_and_register_commands(lq_dir, auto_yes)
         return
 
     # Create directories
@@ -842,11 +847,16 @@ def cmd_init(args: argparse.Namespace) -> None:
     except Exception as e:
         print(f"Warning: Could not copy schema.sql: {e}", file=sys.stderr)
 
-    # Detect project info from git remote
+    # Detect project info from git remote (can be overridden)
     project_info = detect_project_info()
+
+    # Apply overrides from command line
+    namespace = getattr(args, "namespace", None) or project_info.namespace
+    project = getattr(args, "project", None) or project_info.project
+
     config = LqConfig(
-        namespace=project_info.namespace,
-        project=project_info.project,
+        namespace=namespace,
+        project=project,
     )
     save_config(lq_dir, config)
 
@@ -854,8 +864,8 @@ def cmd_init(args: argparse.Namespace) -> None:
     print("  logs/      - Hive-partitioned parquet files")
     print("  raw/       - Raw log files (optional)")
     print("  schema.sql - SQL schema and macros")
-    if project_info.is_detected():
-        print(f"  project    - {project_info.namespace}/{project_info.project}")
+    if namespace and project:
+        print(f"  project    - {namespace}/{project}")
 
     # Install required extensions
     _install_extensions()
@@ -863,6 +873,10 @@ def cmd_init(args: argparse.Namespace) -> None:
     # Create MCP config if requested
     if create_mcp:
         _write_mcp_config(mcp_config_path)
+
+    # Detect and register commands if requested
+    if detect_commands:
+        _detect_and_register_commands(lq_dir, auto_yes)
 
 
 def _write_mcp_config(path: Path) -> None:
@@ -890,6 +904,130 @@ def _install_extensions() -> None:
     else:
         print("  duck_hunt  - Installation failed (some features unavailable)", file=sys.stderr)
         print("             Run manually: INSTALL duck_hunt FROM community", file=sys.stderr)
+
+
+# Build system detection rules
+# Each entry: (file_to_check, [(command_name, command, description), ...])
+BUILD_SYSTEM_DETECTORS: list[tuple[str, list[tuple[str, str, str]]]] = [
+    ("Makefile", [
+        ("build", "make", "Build the project"),
+        ("test", "make test", "Run tests"),
+        ("clean", "make clean", "Clean build artifacts"),
+    ]),
+    ("package.json", [
+        ("build", "npm run build", "Build the project"),
+        ("test", "npm test", "Run tests"),
+        ("lint", "npm run lint", "Run linter"),
+    ]),
+    ("pyproject.toml", [
+        ("test", "pytest", "Run tests"),
+        ("lint", "ruff check .", "Run linter"),
+    ]),
+    ("Cargo.toml", [
+        ("build", "cargo build", "Build the project"),
+        ("test", "cargo test", "Run tests"),
+    ]),
+    ("go.mod", [
+        ("build", "go build ./...", "Build the project"),
+        ("test", "go test ./...", "Run tests"),
+    ]),
+    ("CMakeLists.txt", [
+        ("build", "cmake --build .", "Build the project"),
+        ("test", "ctest", "Run tests"),
+    ]),
+]
+
+
+def _detect_commands() -> list[tuple[str, str, str]]:
+    """Detect available build/test commands based on project files.
+
+    Returns list of (name, command, description) tuples.
+    """
+    cwd = Path.cwd()
+    detected: list[tuple[str, str, str]] = []
+    seen_names: set[str] = set()
+
+    for build_file, commands in BUILD_SYSTEM_DETECTORS:
+        if (cwd / build_file).exists():
+            for name, cmd, desc in commands:
+                # Skip if we already have a command with this name
+                if name not in seen_names:
+                    # For package.json, verify the script exists
+                    if build_file == "package.json":
+                        if not _package_json_has_script(cwd / build_file, name):
+                            continue
+                    detected.append((name, cmd, desc))
+                    seen_names.add(name)
+
+    return detected
+
+
+def _package_json_has_script(path: Path, script_name: str) -> bool:
+    """Check if package.json has a specific script defined."""
+    try:
+        import json
+        data = json.loads(path.read_text())
+        scripts = data.get("scripts", {})
+        # Map our command names to npm script names
+        script_map = {"build": "build", "test": "test", "lint": "lint"}
+        npm_script = script_map.get(script_name, script_name)
+        return npm_script in scripts
+    except Exception:
+        return False
+
+
+def _detect_and_register_commands(lq_dir: Path, auto_yes: bool) -> None:
+    """Detect and optionally register build/test commands.
+
+    Args:
+        lq_dir: Path to .lq directory
+        auto_yes: If True, register without prompting
+    """
+    detected = _detect_commands()
+
+    if not detected:
+        print("\n  No build systems detected.")
+        return
+
+    # Load existing commands to avoid duplicates
+    existing = load_commands(lq_dir)
+    new_commands = [(n, c, d) for n, c, d in detected if n not in existing]
+
+    if not new_commands:
+        print("\n  All detected commands already registered.")
+        return
+
+    print(f"\n  Detected {len(new_commands)} command(s):")
+    for name, cmd, desc in new_commands:
+        print(f"    {name}: {cmd}")
+
+    if auto_yes:
+        # Auto-register all
+        for name, cmd, desc in new_commands:
+            existing[name] = RegisteredCommand(
+                name=name,
+                cmd=cmd,
+                description=desc,
+            )
+        save_commands(lq_dir, existing)
+        print(f"  Registered {len(new_commands)} command(s).")
+    else:
+        # Prompt user
+        try:
+            response = input("\n  Register these commands? [Y/n] ").strip().lower()
+            if response in ("", "y", "yes"):
+                for name, cmd, desc in new_commands:
+                    existing[name] = RegisteredCommand(
+                        name=name,
+                        cmd=cmd,
+                        description=desc,
+                    )
+                save_commands(lq_dir, existing)
+                print(f"  Registered {len(new_commands)} command(s).")
+            else:
+                print("  Skipped command registration.")
+        except (EOFError, KeyboardInterrupt):
+            print("\n  Skipped command registration.")
 
 
 def capture_environment(env_vars: list[str]) -> dict[str, str]:
@@ -1950,6 +2088,24 @@ def main() -> None:
         "--mcp", "-m",
         action="store_true",
         help="Create .mcp.json for MCP server discovery"
+    )
+    p_init.add_argument(
+        "--project", "-p",
+        help="Project name (overrides auto-detection)"
+    )
+    p_init.add_argument(
+        "--namespace", "-n",
+        help="Project namespace (overrides auto-detection)"
+    )
+    p_init.add_argument(
+        "--detect", "-d",
+        action="store_true",
+        help="Auto-detect and register build/test commands"
+    )
+    p_init.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Non-interactive mode (auto-confirm detected commands)"
     )
     p_init.set_defaults(func=cmd_init)
 
