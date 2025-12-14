@@ -558,11 +558,18 @@ class LogStore:
         # This makes hostname, namespace, project, date, source available as columns
         # Use explicit hive partition pattern - DuckDB's ** glob doesn't follow symlinks,
         # but explicit patterns like hostname=*/... do work through symlinks
-        parquet_glob = str(parquet_root / "hostname=*" / "namespace=*" / "project=*" / "**" / "*.parquet")
+        parquet_glob = str(parquet_root /                 # Either .lq, ~/.lq/projects, etc.
+            "hostname=*" / "namespace=*" / "project=*" /  # This allows us to traverse symlinks
+            "**" / "*.parquet"                            # Specific project repo structure
+        )
         conn.execute(f"""
             CREATE OR REPLACE VIEW lq_events AS
             SELECT *
-            FROM read_parquet('{parquet_glob}', hive_partitioning=true, union_by_name=true, filename=true)
+            FROM read_parquet('{parquet_glob}',
+                hive_partitioning=true,
+                union_by_name=true,
+                filename=true
+            )
         """)
 
         # Create instance with special handling for raw parquet

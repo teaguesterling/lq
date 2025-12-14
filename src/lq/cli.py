@@ -47,8 +47,6 @@ import socket
 import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
-
-import yaml
 from datetime import datetime, timedelta
 from importlib import resources
 from pathlib import Path
@@ -56,6 +54,7 @@ from typing import Any
 
 import duckdb
 import pandas as pd
+import yaml
 
 from lq.query import LogQuery, LogStore
 
@@ -370,7 +369,7 @@ class LqConfig:
     project: str | None = None
 
     @classmethod
-    def load(cls, lq_dir: Path) -> "LqConfig":
+    def load(cls, lq_dir: Path) -> LqConfig:
         """Load config from config.yaml, falling back to defaults."""
         config_path = lq_dir / CONFIG_FILE
         if not config_path.exists():
@@ -1367,7 +1366,6 @@ def cmd_run(args: argparse.Namespace) -> None:
         command = reg_cmd.cmd
         source_name = args.name or first_arg
         format_hint = args.format if args.format != "auto" else reg_cmd.format
-        timeout = reg_cmd.timeout
         should_capture = reg_cmd.capture
         # Add command-specific env vars
         for var in reg_cmd.capture_env:
@@ -1428,7 +1426,8 @@ def cmd_run(args: argparse.Namespace) -> None:
     # No-capture mode: just run and exit with the command's exit code
     if not should_capture:
         if not quiet:
-            print(f"\n[lq] Completed in {duration_sec:.1f}s (exit code {exit_code})", file=sys.stderr)
+            print(f"\n[lq] Completed in {duration_sec:.1f}s (exit code {exit_code})",
+                  file=sys.stderr)
         sys.exit(exit_code)
 
     # Always save raw output when using structured output (needed for context)
@@ -2018,7 +2017,8 @@ def _soft_sync(source: Path, target: Path, force: bool, verbose: bool) -> None:
                 print("Use --force to replace (will delete existing data!)", file=sys.stderr)
                 sys.exit(1)
         else:
-            print(f"Error: Target exists and is not a symlink or directory: {target}", file=sys.stderr)
+            print(f"Error: Target exists and is not a symlink or directory: {target}",
+                  file=sys.stderr)
             sys.exit(1)
 
     # Create symlink
@@ -2547,7 +2547,8 @@ def main() -> None:
         "--timeout", "-t", type=int, default=300, help="Timeout in seconds (default: 300)"
     )
     p_register.add_argument("--format", "-f", default="auto", help="Log format hint")
-    p_register.add_argument("--no-capture", "-N", action="store_true", help="Don't capture logs by default")
+    p_register.add_argument("--no-capture", "-N", action="store_true",
+                           help="Don't capture logs by default")
     p_register.add_argument("--force", action="store_true", help="Overwrite existing command")
     p_register.set_defaults(func=cmd_register)
 
@@ -2558,7 +2559,8 @@ def main() -> None:
 
     # sync
     p_sync = subparsers.add_parser("sync", help="Sync project logs to central location")
-    p_sync.add_argument("destination", nargs="?", help="Destination path (default: ~/.lq/projects/)")
+    p_sync.add_argument("destination", nargs="?",
+                        help="Destination path", default=GLOBAL_PROJECTS_PATH)
     p_sync.add_argument("--soft", "-s", action="store_true", default=True,
                         help="Create symlink (default)")
     p_sync.add_argument("--hard", "-H", action="store_true",

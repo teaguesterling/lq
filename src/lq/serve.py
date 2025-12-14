@@ -412,8 +412,8 @@ def _history_impl(limit: int = 20, source: str | None = None) -> dict[str, Any]:
                     "error_count": error_count,
                     "warning_count": warning_count,
                     "started_at": str(row.get("started_at", "")),
-                    "exit_code": int(row["exit_code"]) 
-                    if not pd.isna(row.get("exit_code")) 
+                    "exit_code": int(row["exit_code"])
+                    if not pd.isna(row.get("exit_code"))
                     else None,
                     "command": _to_json_safe(row.get("command")),
                     "cwd": _to_json_safe(row.get("cwd")),
