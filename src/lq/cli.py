@@ -152,15 +152,17 @@ def main() -> None:
         help="Log format for parsing (default: auto). Use 'lq formats' to list available formats.",
     )
     parser.add_argument(
-        "-g", "--global",
+        "-g",
+        "--global",
         action="store_true",
         dest="global_",
-        help="Query global store (~/.lq/projects/) instead of local .lq"
+        help="Query global store (~/.lq/projects/) instead of local .lq",
     )
     parser.add_argument(
-        "-d", "--database",
+        "-d",
+        "--database",
         metavar="PATH",
-        help="Query custom database path (local or remote, e.g., s3://bucket/lq/)"
+        help="Query custom database path (local or remote, e.g., s3://bucket/lq/)",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command")
@@ -170,23 +172,16 @@ def main() -> None:
     p_init.add_argument(
         "--mcp", "-m", action="store_true", help="Create .mcp.json for MCP server discovery"
     )
+    p_init.add_argument("--project", "-p", help="Project name (overrides auto-detection)")
+    p_init.add_argument("--namespace", "-n", help="Project namespace (overrides auto-detection)")
     p_init.add_argument(
-        "--project", "-p",
-        help="Project name (overrides auto-detection)"
+        "--detect", "-d", action="store_true", help="Auto-detect and register build/test commands"
     )
     p_init.add_argument(
-        "--namespace", "-n",
-        help="Project namespace (overrides auto-detection)"
-    )
-    p_init.add_argument(
-        "--detect", "-d",
+        "--yes",
+        "-y",
         action="store_true",
-        help="Auto-detect and register build/test commands"
-    )
-    p_init.add_argument(
-        "--yes", "-y",
-        action="store_true",
-        help="Non-interactive mode (auto-confirm detected commands)"
+        help="Non-interactive mode (auto-confirm detected commands)",
     )
     p_init.set_defaults(func=cmd_init)
 
@@ -211,10 +206,21 @@ def main() -> None:
     p_run.set_defaults(func=cmd_run)
     # Capture control: runtime flags override command config
     capture_group = p_run.add_mutually_exclusive_group()
-    capture_group.add_argument("--capture", "-C", action="store_true", dest="capture", default=None,
-                               help="Force log capture (override command config)")
-    capture_group.add_argument("--no-capture", "-N", action="store_false", dest="capture",
-                               help="Skip log capture, just run command")
+    capture_group.add_argument(
+        "--capture",
+        "-C",
+        action="store_true",
+        dest="capture",
+        default=None,
+        help="Force log capture (override command config)",
+    )
+    capture_group.add_argument(
+        "--no-capture",
+        "-N",
+        action="store_false",
+        dest="capture",
+        help="Skip log capture, just run command",
+    )
 
     # import
     p_import = subparsers.add_parser("import", help="Import existing log file")
@@ -301,8 +307,9 @@ def main() -> None:
         "--timeout", "-t", type=int, default=300, help="Timeout in seconds (default: 300)"
     )
     p_register.add_argument("--format", "-f", default="auto", help="Log format hint")
-    p_register.add_argument("--no-capture", "-N", action="store_true",
-                           help="Don't capture logs by default")
+    p_register.add_argument(
+        "--no-capture", "-N", action="store_true", help="Don't capture logs by default"
+    )
     p_register.add_argument("--force", action="store_true", help="Overwrite existing command")
     p_register.set_defaults(func=cmd_register)
 
@@ -313,20 +320,19 @@ def main() -> None:
 
     # sync
     p_sync = subparsers.add_parser("sync", help="Sync project logs to central location")
-    p_sync.add_argument("destination", nargs="?",
-                        help="Destination path", default=GLOBAL_PROJECTS_PATH)
-    p_sync.add_argument("--soft", "-s", action="store_true", default=True,
-                        help="Create symlink (default)")
-    p_sync.add_argument("--hard", "-H", action="store_true",
-                        help="Copy files instead of symlink")
-    p_sync.add_argument("--force", "-f", action="store_true",
-                        help="Replace existing sync target")
-    p_sync.add_argument("--dry-run", "-n", action="store_true",
-                        help="Show what would be done without doing it")
-    p_sync.add_argument("--status", action="store_true",
-                        help="Show current sync status")
-    p_sync.add_argument("--verbose", "-v", action="store_true",
-                        help="Verbose output")
+    p_sync.add_argument(
+        "destination", nargs="?", help="Destination path", default=GLOBAL_PROJECTS_PATH
+    )
+    p_sync.add_argument(
+        "--soft", "-s", action="store_true", default=True, help="Create symlink (default)"
+    )
+    p_sync.add_argument("--hard", "-H", action="store_true", help="Copy files instead of symlink")
+    p_sync.add_argument("--force", "-f", action="store_true", help="Replace existing sync target")
+    p_sync.add_argument(
+        "--dry-run", "-n", action="store_true", help="Show what would be done without doing it"
+    )
+    p_sync.add_argument("--status", action="store_true", help="Show current sync status")
+    p_sync.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     p_sync.set_defaults(func=cmd_sync)
 
     # query (with alias 'q')
