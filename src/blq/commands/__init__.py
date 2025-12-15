@@ -5,7 +5,7 @@ This module provides modular command implementations for the blq CLI.
 """
 
 from blq.commands.events import cmd_context, cmd_event
-from blq.commands.execution import cmd_capture, cmd_import, cmd_run
+from blq.commands.execution import cmd_capture, cmd_exec, cmd_import, cmd_run
 from blq.commands.init_cmd import cmd_init
 from blq.commands.management import (
     cmd_errors,
@@ -25,6 +25,7 @@ __all__ = [
     "cmd_init",
     # Execution
     "cmd_run",
+    "cmd_exec",
     "cmd_import",
     "cmd_capture",
     # Query

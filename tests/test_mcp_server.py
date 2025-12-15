@@ -29,8 +29,9 @@ def mcp_server(initialized_project, sample_build_script):
     # Import here to avoid errors if fastmcp not installed
     from blq.serve import mcp
 
+    # Use exec for ad-hoc command execution (run is for registered commands only)
     subprocess.run(
-        ["blq", "run", "--quiet", str(sample_build_script)],
+        ["blq", "exec", "--quiet", str(sample_build_script)],
         capture_output=True,
     )
 
@@ -50,14 +51,14 @@ def mcp_server_empty(initialized_project):
 # ============================================================================
 
 
-class TestRunTool:
-    """Tests for the run tool."""
+class TestExecTool:
+    """Tests for the exec tool (ad-hoc command execution)."""
 
     @pytest.mark.asyncio
-    async def test_run_command(self, mcp_server_empty, sample_build_script):
-        """Run a command and capture output."""
+    async def test_exec_command(self, mcp_server_empty, sample_build_script):
+        """Execute an ad-hoc command and capture output."""
         async with Client(mcp_server_empty) as client:
-            raw = await client.call_tool("run", {"command": str(sample_build_script)})
+            raw = await client.call_tool("exec", {"command": str(sample_build_script)})
             result = get_data(raw)
 
             assert "run_id" in result
@@ -65,27 +66,41 @@ class TestRunTool:
             assert result["status"] in ["OK", "FAIL"]
 
     @pytest.mark.asyncio
-    async def test_run_with_args(self, mcp_server_empty):
-        """Run a command with arguments."""
+    async def test_exec_with_args(self, mcp_server_empty):
+        """Execute a command with arguments."""
         async with Client(mcp_server_empty) as client:
-            raw = await client.call_tool("run", {"command": "echo", "args": ["hello", "world"]})
+            raw = await client.call_tool("exec", {"command": "echo", "args": ["hello", "world"]})
             result = get_data(raw)
 
             assert result["status"] == "OK"
             assert result["exit_code"] == 0
 
     @pytest.mark.asyncio
-    async def test_run_failing_command(self, mcp_server_empty):
-        """Run a command that fails."""
+    async def test_exec_failing_command(self, mcp_server_empty):
+        """Execute a command that fails."""
         async with Client(mcp_server_empty) as client:
             raw = await client.call_tool(
-                "run",
+                "exec",
                 {"command": "false"},  # Always exits with 1
             )
             result = get_data(raw)
 
             assert result["status"] == "FAIL"
             assert result["exit_code"] != 0
+
+
+class TestRunTool:
+    """Tests for the run tool (registered commands)."""
+
+    @pytest.mark.asyncio
+    async def test_run_unregistered_command_fails(self, mcp_server_empty):
+        """Run should fail for unregistered commands."""
+        async with Client(mcp_server_empty) as client:
+            raw = await client.call_tool("run", {"command": "nonexistent"})
+            result = get_data(raw)
+
+            assert result["status"] == "FAIL"
+            assert "not a registered command" in result.get("error", "")
 
 
 class TestQueryTool:
@@ -329,11 +344,11 @@ class TestDiffTool:
     async def test_diff_two_runs(self, mcp_server_empty, sample_build_script):
         """Compare two runs."""
         async with Client(mcp_server_empty) as client:
-            # Create two runs
-            run1_raw = await client.call_tool("run", {"command": str(sample_build_script)})
+            # Create two runs using exec (ad-hoc execution)
+            run1_raw = await client.call_tool("exec", {"command": str(sample_build_script)})
             run1 = get_data(run1_raw)
 
-            run2_raw = await client.call_tool("run", {"command": str(sample_build_script)})
+            run2_raw = await client.call_tool("exec", {"command": str(sample_build_script)})
             run2 = get_data(run2_raw)
 
             if run1.get("run_id") and run2.get("run_id"):
@@ -431,8 +446,8 @@ class TestIntegration:
     async def test_build_and_query_workflow(self, mcp_server_empty, sample_build_script):
         """Test typical build -> query -> drill-down workflow."""
         async with Client(mcp_server_empty) as client:
-            # 1. Run build
-            run_raw = await client.call_tool("run", {"command": str(sample_build_script)})
+            # 1. Run build using exec (ad-hoc execution)
+            run_raw = await client.call_tool("exec", {"command": str(sample_build_script)})
             run_result = get_data(run_raw)
             assert "run_id" in run_result
 

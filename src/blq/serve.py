@@ -63,9 +63,77 @@ def _parse_ref(ref: str) -> tuple[int, int]:
 
 
 def _run_impl(command: str, args: list[str] | None = None, timeout: int = 300) -> dict[str, Any]:
-    """Implementation of run command."""
-    # Build command for blq run
+    """Implementation of run command (for registered commands)."""
+    # Build command for blq run (registered commands only)
     cmd_parts = ["blq", "run", "--json", "--quiet"]
+    cmd_parts.append(command)
+    if args:
+        cmd_parts.extend(args)
+
+    try:
+        result = subprocess.run(
+            cmd_parts,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+
+        # Parse JSON output
+        if result.stdout.strip():
+            try:
+                return json.loads(result.stdout)
+            except json.JSONDecodeError:
+                pass
+
+        # Check if this was a "not registered" error
+        if "is not a registered command" in result.stderr:
+            return {
+                "run_id": None,
+                "status": "FAIL",
+                "exit_code": result.returncode,
+                "error": f"'{command}' is not a registered command. Use exec() for ad-hoc commands.",
+                "error_count": 0,
+                "warning_count": 0,
+                "errors": [],
+            }
+
+        # Fallback: construct basic result
+        return {
+            "run_id": None,
+            "status": "FAIL" if result.returncode != 0 else "OK",
+            "exit_code": result.returncode,
+            "error_count": 0,
+            "warning_count": 0,
+            "errors": [],
+            "output": result.stdout[:1000] if result.stdout else None,
+            "stderr": result.stderr[:1000] if result.stderr else None,
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "run_id": None,
+            "status": "FAIL",
+            "exit_code": -1,
+            "error": f"Command timed out after {timeout} seconds",
+            "error_count": 0,
+            "warning_count": 0,
+            "errors": [],
+        }
+    except Exception as e:
+        return {
+            "run_id": None,
+            "status": "FAIL",
+            "exit_code": -1,
+            "error": str(e),
+            "error_count": 0,
+            "warning_count": 0,
+            "errors": [],
+        }
+
+
+def _exec_impl(command: str, args: list[str] | None = None, timeout: int = 300) -> dict[str, Any]:
+    """Implementation of exec command (for ad-hoc shell commands)."""
+    # Build command for blq exec
+    cmd_parts = ["blq", "exec", "--json", "--quiet"]
     cmd_parts.append(command)
     if args:
         cmd_parts.extend(args)
@@ -606,10 +674,10 @@ def _list_commands_impl() -> dict[str, Any]:
 
 @mcp.tool()
 def run(command: str, args: list[str] | None = None, timeout: int = 300) -> dict[str, Any]:
-    """Run a command and capture its output.
+    """Run a registered command and capture its output.
 
     Args:
-        command: Command to run (registered name or shell command)
+        command: Registered command name (use exec() for ad-hoc commands)
         args: Additional arguments
         timeout: Timeout in seconds (default: 300)
 
@@ -617,6 +685,21 @@ def run(command: str, args: list[str] | None = None, timeout: int = 300) -> dict
         Run result with status, errors, and warnings
     """
     return _run_impl(command, args, timeout)
+
+
+@mcp.tool()
+def exec(command: str, args: list[str] | None = None, timeout: int = 300) -> dict[str, Any]:
+    """Execute an ad-hoc shell command and capture its output.
+
+    Args:
+        command: Shell command to execute
+        args: Additional arguments
+        timeout: Timeout in seconds (default: 300)
+
+    Returns:
+        Run result with status, errors, and warnings
+    """
+    return _exec_impl(command, args, timeout)
 
 
 @mcp.tool()

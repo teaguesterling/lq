@@ -1,25 +1,29 @@
-# run - Execute Registered Commands
+# exec - Execute Ad-hoc Commands
 
-Run a registered command and capture its output.
+Execute a shell command and capture its output.
 
 ## Synopsis
 
 ```bash
-blq run [OPTIONS] <registered-name>
-blq r [OPTIONS] <registered-name>
+blq exec [OPTIONS] COMMAND [ARGS...]
+blq e [OPTIONS] COMMAND [ARGS...]
 ```
 
 ## Description
 
-The `run` command executes a registered command by name, captures its output, parses it for errors and warnings, and stores the events in `.lq/logs/`.
+The `exec` command executes a shell command directly, captures its output, parses it for errors and warnings, and stores the events in `.lq/logs/`.
 
-For ad-hoc shell commands, use `blq exec` instead.
+Unlike `blq run`, which operates on registered commands, `exec` runs any shell command directly. This is useful for:
+
+- One-off commands you don't want to register
+- Testing commands before adding them to your workflow
+- Quick debugging sessions
 
 ## Options
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--name NAME` | `-n` | Source name (default: command name) |
+| `--name NAME` | `-n` | Source name (default: derived from command) |
 | `--format FORMAT` | `-f` | Parse format hint (default: auto) |
 | `--keep-raw` | `-r` | Keep raw output file in `.lq/raw/` |
 | `--json` | `-j` | Output structured JSON result |
@@ -29,47 +33,32 @@ For ad-hoc shell commands, use `blq exec` instead.
 | `--verbose` | `-v` | Show all blq status messages |
 | `--include-warnings` | `-w` | Include warnings in structured output |
 | `--error-limit N` | | Max errors/warnings in output (default: 20) |
-| `--capture` | `-C` | Force log capture (override command config) |
 | `--no-capture` | `-N` | Skip log capture, just run command |
-| `--register` | | Register and run an unregistered command |
 
 ## Examples
 
-### Running Registered Commands
+### Basic Usage
 
 ```bash
-# First, register your commands
-blq register build "make -j8"
-blq register test "pytest -v"
-
-# Then run by name
-blq run build
-blq run test
-blq r build  # Short alias
+blq exec make -j8
+blq exec pytest -v
+blq exec cargo build
+blq e npm test  # Short alias
 ```
 
-### Register and Run
+### Named Execution
 
-If a command isn't registered yet, use `--register` to register and run in one step:
-
-```bash
-blq run --register "make -j8"
-# Equivalent to:
-#   blq register make-j8 "make -j8"
-#   blq run make-j8
-```
-
-### Named Run
+Give the run a meaningful name:
 
 ```bash
-blq run --name "nightly build" build
+blq exec --name "nightly build" make -j8
 ```
 
 ### Keep Raw Log
 
 ```bash
-blq run --keep-raw build
-# Creates .lq/raw/001_build_103000.log
+blq exec --keep-raw make
+# Creates .lq/raw/001_make_103000.log
 ```
 
 ### Structured Output
@@ -78,13 +67,13 @@ For CI/CD or agent integration:
 
 ```bash
 # JSON output
-blq run --json build
+blq exec --json make
 
 # Markdown summary
-blq run --markdown build
+blq exec --markdown make
 
 # Quiet mode (no streaming, just result)
-blq run --quiet --json build
+blq exec --quiet --json make
 ```
 
 ### Include Warnings
@@ -92,61 +81,46 @@ blq run --quiet --json build
 By default, structured output only includes errors. To include warnings:
 
 ```bash
-blq run --json --include-warnings build
+blq exec --json --include-warnings make
 ```
 
 ### Limit Output
 
 ```bash
-blq run --json --error-limit 5 build
+blq exec --json --error-limit 5 make
 ```
 
 ## Verbosity Control
 
-By default, `blq run` shows only the command's output. Use verbosity flags to control additional output:
+By default, `blq exec` shows only the command's output. Use verbosity flags to control additional output:
 
 ### Default (quiet blq output)
 ```bash
-blq run build
+blq exec make
 # Shows only: command output + streaming stdout/stderr
 ```
 
 ### Summary Mode
 ```bash
-blq run --summary build
+blq exec --summary make
 # Shows: command output + brief summary at end
-# Output: ✓ build completed (0 errors, 2 warnings)
+# Output: ✓ make completed (0 errors, 2 warnings)
 ```
 
 ### Verbose Mode
 ```bash
-blq run --verbose build
+blq exec --verbose make
 # Shows: command output + all blq status messages
 # Output includes: parsing progress, storage info, timing
 ```
 
-## Capture Control
+## Skip Capture
 
-Commands can be configured to skip log capture (see [register](registry.md)). At runtime, you can override this:
+For quick execution without log parsing:
 
-### Force Capture
 ```bash
-# Run a no-capture command with capture enabled
-blq run --capture format
+blq exec --no-capture make clean
 ```
-
-### Skip Capture
-```bash
-# Run quickly without parsing/storing
-blq run --no-capture build
-```
-
-### When to Skip Capture
-
-Use `--no-capture` when:
-- Speed is critical and you don't need error tracking
-- Running formatters, cleaners, or other non-diagnostic commands
-- Testing a command before full integration
 
 ## Structured Output Format
 
@@ -192,12 +166,31 @@ blq context 1:1
 
 ## Exit Code
 
-`blq run` exits with the same exit code as the command it ran. This preserves the fail/pass semantics for CI/CD pipelines.
+`blq exec` exits with the same exit code as the command it ran. This preserves the fail/pass semantics for CI/CD pipelines.
+
+## run vs exec
+
+| Command | Purpose | Use When |
+|---------|---------|----------|
+| `blq run` | Execute registered commands | Running recurring build/test commands |
+| `blq exec` | Execute ad-hoc commands | One-off commands, quick tests |
+
+If you find yourself running the same `exec` command repeatedly, consider registering it:
+
+```bash
+# Instead of:
+blq exec make -j8  # repeatedly
+
+# Do this once:
+blq register build "make -j8"
+
+# Then use:
+blq run build
+```
 
 ## See Also
 
-- [exec](exec.md) - Execute ad-hoc shell commands
+- [run](run.md) - Execute registered commands
 - [registry](registry.md) - Register reusable commands
 - [capture](capture.md) - Import log files or capture from stdin
 - [errors](errors.md) - View errors and event details
-- [status](status.md) - Check run status and history

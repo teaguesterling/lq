@@ -11,44 +11,66 @@ These options apply to all commands:
 
 ## Command Categories
 
+### Setup
+
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `init` | Initialize .lq directory | [init](init.md) |
+
+### Running & Capturing
+
+| Command | Alias | Description | Documentation |
+|---------|-------|-------------|---------------|
+| `run` | `r` | Run a registered command | [run](run.md) |
+| `exec` | `e` | Execute ad-hoc shell command | [exec](exec.md) |
+| `import` | | Import an existing log file | [capture](capture.md) |
+| `capture` | | Capture from stdin | [capture](capture.md) |
+
+### Viewing Results
+
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `errors` | Show recent errors | [errors](errors.md) |
+| `warnings` | Show recent warnings | [errors](errors.md) |
+| `event` | Show details for a specific event | [errors](errors.md) |
+| `context` | Show log context around an event | [errors](errors.md) |
+
+### Status & History
+
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `status` | Show status of all sources | [status](status.md) |
+| `history` | Show run history | [status](status.md) |
+| `summary` | Aggregate summary | [status](status.md) |
+
 ### Querying
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| [query](query.md) | `q` | Query log files or stored events with SQL |
-| [filter](filter.md) | `f` | Filter with simple key=value syntax |
-| [sql](sql.md) | | Run arbitrary SQL queries |
-| [shell](shell.md) | | Interactive DuckDB shell |
+| Command | Alias | Description | Documentation |
+|---------|-------|-------------|---------------|
+| `query` | `q` | Query log files or stored events with SQL | [query](query.md) |
+| `filter` | `f` | Filter with simple key=value syntax | [filter](filter.md) |
+| `sql` | | Run arbitrary SQL queries | [sql](sql.md) |
+| `shell` | | Interactive DuckDB shell | [sql](sql.md) |
 
-### Capturing
+### Command Registry
 
-| Command | Description |
-|---------|-------------|
-| [run](run.md) | Run a command and capture output |
-| [import](import.md) | Import an existing log file |
-| [capture](capture.md) | Capture from stdin |
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `register` | Register a reusable command | [registry](registry.md) |
+| `unregister` | Remove a registered command | [registry](registry.md) |
+| `commands` | List registered commands | [registry](registry.md) |
 
-### Viewing
+### Maintenance
 
-| Command | Description |
-|---------|-------------|
-| [errors](errors.md) | Show recent errors |
-| [warnings](warnings.md) | Show recent warnings |
-| [event](event.md) | Show details for a specific event |
-| [context](context.md) | Show log context around an event |
-| [status](status.md) | Show status of all sources |
-| [history](history.md) | Show run history |
-| [summary](summary.md) | Aggregate summary |
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `prune` | Remove old log files | [maintenance](maintenance.md) |
 
-### Management
+### Server
 
-| Command | Description |
-|---------|-------------|
-| [init](init.md) | Initialize .lq directory |
-| [register](register.md) | Register a reusable command |
-| [unregister](unregister.md) | Remove a registered command |
-| [commands](commands.md) | List registered commands |
-| [prune](prune.md) | Remove old log files |
+| Command | Description | Documentation |
+|---------|-------------|---------------|
+| `serve` | Start MCP server for AI agents | [MCP Server](../mcp.md) |
 
 ## Quick Reference
 
@@ -62,16 +84,17 @@ blq q -f "severity='error'" build.log
 blq f severity=error build.log
 blq f -c severity=error build.log    # count only
 
-# Run commands
-blq run make
-blq run --json make test
+# Execute ad-hoc commands
+blq exec make
+blq e --json pytest -v
+
+# Register and run commands
+blq register build "make -j8"
+blq run build
+blq r --json build
 
 # View events
 blq errors
 blq event 1:3
 blq context 1:3
-
-# Manage commands
-blq register build "make -j8"
-blq run build
 ```

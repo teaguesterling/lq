@@ -399,10 +399,10 @@ class TestRunRegisteredCommand:
         assert data["status"] == "OK"
         assert data["exit_code"] == 0
 
-    def test_run_literal_command_when_not_registered(
+    def test_run_fails_for_unregistered_command(
         self, initialized_project, sample_success_script, capsys
     ):
-        """Run literal command when name is not registered."""
+        """Run should fail for unregistered commands (use exec for ad-hoc)."""
         import argparse
 
         from blq.cli import cmd_run
@@ -418,17 +418,17 @@ class TestRunRegisteredCommand:
             include_warnings=False,
             error_limit=20,
             capture=None,
+            register=False,
         )
 
-        try:
+        # cmd_run should exit with error for unregistered commands
+        with pytest.raises(SystemExit) as exc_info:
             cmd_run(args)
-        except SystemExit as e:
-            assert e.code == 0
+
+        assert exc_info.value.code == 1
 
         captured = capsys.readouterr()
-        data = json.loads(captured.out)
-
-        assert data["status"] == "OK"
+        assert "not a registered command" in captured.err
 
     def test_run_registered_uses_stored_format(self, initialized_project, capsys):
         """Running registered command uses its stored format hint."""
@@ -451,8 +451,8 @@ class TestRunRegisteredCommand:
         commands = load_commands(Path(".lq"))
         assert commands["lint"].format == "eslint_json"
 
-    def test_run_with_multiple_args_not_registered(self, initialized_project, capsys):
-        """Multi-arg command is treated as literal, not registered name."""
+    def test_run_with_multiple_args_fails_if_not_registered(self, initialized_project, capsys):
+        """Multi-arg command fails if not registered (use exec for ad-hoc)."""
         import argparse
 
         from blq.cli import cmd_register, cmd_run
@@ -470,7 +470,8 @@ class TestRunRegisteredCommand:
         cmd_register(args)
         capsys.readouterr()
 
-        # Run 'build extra args' - should be treated as literal command
+        # Run 'build extra args' - this should fail because the full command
+        # is not registered (we no longer fall back to shell execution)
         args = argparse.Namespace(
             command=["build", "extra", "args"],
             name=None,
@@ -482,17 +483,13 @@ class TestRunRegisteredCommand:
             include_warnings=False,
             error_limit=20,
             capture=None,
+            register=False,
         )
 
-        # This will fail because 'build extra args' isn't a valid command
-        # but the important thing is it's not using the registered 'build'
-        try:
+        # cmd_run should fail because 'build extra args' is not registered
+        with pytest.raises(SystemExit) as exc_info:
             cmd_run(args)
-        except SystemExit:
-            pass
 
+        assert exc_info.value.code == 1
         captured = capsys.readouterr()
-        # The command should be the literal string, not the registered one
-        if captured.out:
-            data = json.loads(captured.out)
-            assert data["command"] == "build extra args"
+        assert "not a registered command" in captured.err

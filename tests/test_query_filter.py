@@ -12,7 +12,6 @@ from blq.cli import (
     ConnectionFactory,
     cmd_filter,
     cmd_query,
-    cmd_run,
     format_query_output,
     parse_filter_expression,
     query_source,
@@ -182,25 +181,10 @@ class TestFormatQueryOutput:
 class TestQuerySource:
     """Tests for query_source function."""
 
-    def test_query_stored_events(self, initialized_project, sample_build_script, capsys):
+    def test_query_stored_events(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Query stored events without specifying a file."""
         # First create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         lq_dir = Path(".lq")
         df = query_source(source=None, lq_dir=lq_dir)
@@ -209,25 +193,10 @@ class TestQuerySource:
         assert len(df) > 0
         assert "severity" in df.columns
 
-    def test_query_with_where(self, initialized_project, sample_build_script):
+    def test_query_with_where(self, initialized_project, sample_build_script, run_adhoc_command):
         """Query with WHERE clause."""
         # First create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         lq_dir = Path(".lq")
         df = query_source(source=None, where="severity = 'error'", lq_dir=lq_dir)
@@ -235,25 +204,10 @@ class TestQuerySource:
         # Should return only errors
         assert all(df["severity"] == "error")
 
-    def test_query_with_select(self, initialized_project, sample_build_script):
+    def test_query_with_select(self, initialized_project, sample_build_script, run_adhoc_command):
         """Query with column selection."""
         # First create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         lq_dir = Path(".lq")
         df = query_source(source=None, select="severity, message", lq_dir=lq_dir)
@@ -275,29 +229,15 @@ class TestQuerySource:
 class TestCmdQuery:
     """Tests for cmd_query command."""
 
-    def test_query_stored_data(self, initialized_project, sample_build_script, capsys):
+    def test_query_stored_data(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Query stored data without file argument."""
         # Create some data first
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()  # Clear
 
         # Query stored data
+        import argparse
         args = argparse.Namespace(
             files=[],
             select=None,
@@ -314,29 +254,15 @@ class TestCmdQuery:
         captured = capsys.readouterr()
         assert "severity" in captured.out
 
-    def test_query_with_json_output(self, initialized_project, sample_build_script, capsys):
+    def test_query_with_json_output(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Query with JSON output format."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
         # Query with JSON
+        import argparse
         args = argparse.Namespace(
             files=[],
             select=None,
@@ -354,29 +280,15 @@ class TestCmdQuery:
         data = json.loads(captured.out)
         assert isinstance(data, list)
 
-    def test_query_with_csv_output(self, initialized_project, sample_build_script, capsys):
+    def test_query_with_csv_output(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Query with CSV output format."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
         # Query with CSV
+        import argparse
         args = argparse.Namespace(
             files=[],
             select="severity,message",
@@ -424,25 +336,10 @@ class TestCmdQuery:
 class TestCmdFilter:
     """Tests for cmd_filter command."""
 
-    def test_filter_stored_data(self, initialized_project, sample_build_script, capsys):
+    def test_filter_stored_data(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter stored data."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -463,25 +360,10 @@ class TestCmdFilter:
         captured = capsys.readouterr()
         assert "error" in captured.out.lower()
 
-    def test_filter_count_mode(self, initialized_project, sample_build_script, capsys):
+    def test_filter_count_mode(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with count mode returns only count."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -504,25 +386,10 @@ class TestCmdFilter:
         count = int(captured.out.strip())
         assert count > 0
 
-    def test_filter_invert(self, initialized_project, sample_build_script, capsys):
+    def test_filter_invert(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with invert flag."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -544,25 +411,10 @@ class TestCmdFilter:
         # Should not contain "error" as severity (may contain in message though)
         assert "warning" in captured.out.lower()
 
-    def test_filter_multiple_expressions(self, initialized_project, sample_build_script, capsys):
+    def test_filter_multiple_expressions(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with multiple expressions (AND)."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -585,25 +437,10 @@ class TestCmdFilter:
         # Just check it doesn't crash
         assert captured.out is not None
 
-    def test_filter_json_output(self, initialized_project, sample_build_script, capsys):
+    def test_filter_json_output(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with JSON output."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -646,25 +483,10 @@ class TestCmdFilter:
         captured = capsys.readouterr()
         assert "not found" in captured.err.lower()
 
-    def test_filter_or_values(self, initialized_project, sample_build_script, capsys):
+    def test_filter_or_values(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with OR values (comma-separated)."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 
@@ -687,25 +509,10 @@ class TestCmdFilter:
         # Should have both errors and warnings
         assert count >= 2
 
-    def test_filter_contains_pattern(self, initialized_project, sample_build_script, capsys):
+    def test_filter_contains_pattern(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Filter with contains pattern (~)."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         capsys.readouterr()
 

@@ -49,7 +49,15 @@ nav:
   - Getting Started: getting-started.md
   - Commands:
       - Overview: commands/index.md
-      - Run: commands/run.md
+      - init: commands/init.md
+      - run: commands/run.md
+      - exec: commands/exec.md
+      - Capturing Logs: commands/capture.md
+      - Viewing Errors: commands/errors.md
+      - Status & History: commands/status.md
+      - SQL & Shell: commands/sql.md
+      - Command Registry: commands/registry.md
+      - Maintenance: commands/maintenance.md
       - Query: commands/query.md
       - Filter: commands/filter.md
       - Sync: commands/sync.md

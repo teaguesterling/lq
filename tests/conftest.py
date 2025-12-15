@@ -81,3 +81,39 @@ exit 0
 """)
     script.chmod(0o755)
     return script
+
+
+def _run_adhoc_command(command, name=None, format="auto", quiet=True, json_output=False):
+    """Helper to run an ad-hoc command using cmd_exec.
+
+    Use this instead of cmd_run when you just need to generate test data
+    without registering the command.
+    """
+    import argparse
+
+    from blq.commands import cmd_exec
+
+    args = argparse.Namespace(
+        command=command if isinstance(command, list) else [command],
+        name=name,
+        format=format,
+        keep_raw=False,
+        json=json_output,
+        markdown=False,
+        quiet=quiet,
+        summary=False,
+        verbose=False,
+        include_warnings=False,
+        error_limit=20,
+        no_capture=False,
+    )
+    try:
+        cmd_exec(args)
+    except SystemExit:
+        pass
+
+
+@pytest.fixture
+def run_adhoc_command():
+    """Fixture that provides a helper to run ad-hoc commands."""
+    return _run_adhoc_command

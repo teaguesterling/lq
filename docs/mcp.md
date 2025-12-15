@@ -1,6 +1,6 @@
 # MCP Server Guide
 
-bblq provides an MCP (Model Context Protocol) server for AI agent integration. This allows agents to run builds, query logs, and analyze errors through a standardized interface.
+blq provides an MCP (Model Context Protocol) server for AI agent integration. This allows agents to run builds, query logs, and analyze errors through a standardized interface.
 
 ## Quick Start
 
@@ -13,9 +13,36 @@ blq serve --transport stdio      # For Claude Desktop, etc.
 blq serve --transport sse --port 8080  # For HTTP clients
 ```
 
+## serve Command
+
+Start the MCP server for agent integration.
+
+```bash
+blq serve [OPTIONS]
+```
+
+### Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--transport TYPE` | `-t` | Transport type: `stdio` or `sse` (default: stdio) |
+| `--port PORT` | `-p` | Port for SSE transport (default: 8080) |
+
+### Transport Types
+
+**stdio (default)** - Standard I/O transport for direct integration:
+- Used by Claude Desktop
+- Used by command-line MCP clients
+- Process communicates via stdin/stdout
+
+**sse** - Server-Sent Events over HTTP:
+- Useful for web-based integrations
+- Allows multiple concurrent connections
+- Runs a local HTTP server
+
 ## Overview
 
-The lq MCP server exposes:
+The blq MCP server exposes:
 
 - **Tools** - Actions agents can perform (run commands, query logs)
 - **Resources** - Data agents can read (events, runs, status)
@@ -27,7 +54,8 @@ All tools are namespaced under the `blq` server, so `run` becomes `lq.run` when 
 
 | Tool | Description |
 |------|-------------|
-| `run` | Run a command and capture output |
+| `run` | Run a registered command |
+| `exec` | Execute ad-hoc shell command |
 | `query` | Query logs with SQL |
 | `errors` | Get recent errors |
 | `warnings` | Get recent warnings |
@@ -46,13 +74,13 @@ All tools are namespaced under the `blq` server, so `run` becomes `lq.run` when 
 
 ### run
 
-Run a command and capture its output.
+Run a registered command and capture its output. For ad-hoc commands, use `exec`.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `command` | string | Yes | Command to run (registered name or shell command) |
+| `command` | string | Yes | Registered command name |
 | `args` | string[] | No | Additional arguments |
 | `timeout` | number | No | Timeout in seconds (default: 300) |
 
@@ -85,6 +113,42 @@ Run a command and capture its output.
 ```json
 {
   "tool": "run",
+  "arguments": {
+    "command": "build"
+  }
+}
+```
+
+**Error for unregistered commands:**
+
+```json
+{
+  "status": "FAIL",
+  "error": "'make' is not a registered command. Use 'exec' for ad-hoc commands."
+}
+```
+
+---
+
+### exec
+
+Execute an ad-hoc shell command and capture its output.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `command` | string | Yes | Shell command to execute |
+| `args` | string[] | No | Additional arguments |
+| `timeout` | number | No | Timeout in seconds (default: 300) |
+
+**Returns:** Same structure as `run`.
+
+**Example:**
+
+```json
+{
+  "tool": "exec",
   "arguments": {
     "command": "make",
     "args": ["-j8"]
@@ -855,10 +919,25 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "lq": {
-      "command": "lq",
+    "blq": {
+      "command": "blq",
       "args": ["serve"],
       "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+
+### Project Configuration
+
+Use `blq init --mcp` to create a `.mcp.json` file for automatic server discovery:
+
+```json
+{
+  "mcpServers": {
+    "blq": {
+      "command": "blq",
+      "args": ["serve"]
     }
   }
 }
@@ -868,8 +947,8 @@ Add to `claude_desktop_config.json`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LQ_DIR` | Path to .lq directory | Auto-detect |
-| `LQ_TIMEOUT` | Default command timeout (seconds) | 300 |
+| `BLQ_DIR` | Path to .lq directory | Auto-detect |
+| `BLQ_TIMEOUT` | Default command timeout (seconds) | 300 |
 
 ---
 
@@ -886,7 +965,8 @@ Add to `claude_desktop_config.json`:
 ### Agent Workflow: Fix Build Errors
 
 ```
-1. Agent calls run(command="make")
+1. Agent calls exec(command="make") for ad-hoc execution
+   OR run(command="build") if "build" is registered
    → Gets structured error list
 
 2. Agent calls event(ref="1:1")
@@ -894,7 +974,7 @@ Add to `claude_desktop_config.json`:
 
 3. Agent reads source file and makes fix
 
-4. Agent calls run(command="make")
+4. Agent calls exec(command="make") or run(command="build")
    → Verifies fix worked
 
 5. Repeat until build passes

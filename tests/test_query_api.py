@@ -1,13 +1,11 @@
 """Tests for the LogQuery and LogStore API."""
 
-import argparse
 import os
 from pathlib import Path
 
 import duckdb
 import pytest
 
-from blq.cli import cmd_run
 from blq.query import LogQuery, LogStore
 
 # ============================================================================
@@ -281,144 +279,54 @@ class TestLogStore:
         finally:
             os.chdir(original)
 
-    def test_events_returns_query(self, initialized_project, sample_build_script):
+    def test_events_returns_query(self, initialized_project, sample_build_script, run_adhoc_command):
         """events() returns a LogQuery."""
         # Create some data
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         query = store.events()
         assert isinstance(query, LogQuery)
         assert query.count() > 0
 
-    def test_errors_convenience(self, initialized_project, sample_build_script):
+    def test_errors_convenience(self, initialized_project, sample_build_script, run_adhoc_command):
         """errors() returns filtered query."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         errors = store.errors().df()
         assert all(errors["severity"] == "error")
 
-    def test_warnings_convenience(self, initialized_project, sample_build_script):
+    def test_warnings_convenience(self, initialized_project, sample_build_script, run_adhoc_command):
         """warnings() returns filtered query."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         warnings = store.warnings().df()
         assert all(warnings["severity"] == "warning")
 
-    def test_latest_run(self, initialized_project, sample_build_script):
+    def test_latest_run(self, initialized_project, sample_build_script, run_adhoc_command):
         """latest_run() returns the latest run ID."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         run_id = store.latest_run()
         assert run_id == 1
 
-    def test_run_filter(self, initialized_project, sample_build_script):
+    def test_run_filter(self, initialized_project, sample_build_script, run_adhoc_command):
         """run() filters by run_id."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         events = store.run(1).df()
         assert all(events["run_id"] == 1)
 
-    def test_has_data(self, initialized_project, sample_build_script):
+    def test_has_data(self, initialized_project, sample_build_script, run_adhoc_command):
         """has_data() checks for parquet files."""
         store = LogStore.open()
         assert store.has_data() is False
 
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         assert store.has_data() is True
 
@@ -432,24 +340,9 @@ class TestLogStore:
 class TestLogStoreChaining:
     """Test chaining queries from LogStore."""
 
-    def test_full_query_chain(self, initialized_project, sample_build_script):
+    def test_full_query_chain(self, initialized_project, sample_build_script, run_adhoc_command):
         """Full query chain from store."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
 
         store = LogStore.open()
         result = (

@@ -21,6 +21,7 @@ from blq.cli import (
     get_next_run_id,
     write_run_parquet,
 )
+from blq.commands import cmd_exec
 
 
 class TestGetLqDir:
@@ -121,25 +122,10 @@ class TestGetNextRunId:
         result = get_next_run_id(lq_dir)
         assert result == 1
 
-    def test_increments_after_runs(self, initialized_project, sample_build_script):
+    def test_increments_after_runs(self, initialized_project, sample_build_script, run_adhoc_command):
         """Return next ID after existing runs."""
-        # Run a command to create run 1
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        # Run an ad-hoc command to create run 1
+        run_adhoc_command([str(sample_build_script)])
 
         # Next run should be 2
         lq_dir = Path(".lq")
@@ -164,25 +150,10 @@ class TestGetConnection:
         result = conn.execute("SELECT lq_base_path()").fetchone()
         assert result[0] is not None
 
-    def test_creates_views(self, initialized_project, sample_build_script):
+    def test_creates_views(self, initialized_project, sample_build_script, run_adhoc_command):
         """Create views that work with parquet files."""
-        # Create some data first
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        # Create some data first using ad-hoc execution
+        run_adhoc_command([str(sample_build_script)])
 
         conn = get_connection(Path(".lq"))
         result = conn.execute("SELECT COUNT(*) FROM lq_events").fetchone()
@@ -253,8 +224,8 @@ class TestWriteRunParquet:
         assert row_dict["severity"] == "error"
 
 
-class TestCmdRun:
-    """Tests for blq run command."""
+class TestCmdExec:
+    """Tests for blq exec command (ad-hoc execution)."""
 
     def test_captures_output(self, initialized_project, sample_build_script, capsys):
         """Capture command output and parse errors."""
@@ -266,13 +237,15 @@ class TestCmdRun:
             json=True,
             markdown=False,
             quiet=False,
+            summary=False,
+            verbose=False,
             include_warnings=False,
             error_limit=20,
-            capture=None,
+            no_capture=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
-            cmd_run(args)
+            cmd_exec(args)
 
         # Script exits with 1
         assert exc_info.value.code == 1
@@ -294,13 +267,15 @@ class TestCmdRun:
             json=True,
             markdown=False,
             quiet=False,
+            summary=False,
+            verbose=False,
             include_warnings=False,
             error_limit=20,
-            capture=None,
+            no_capture=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
-            cmd_run(args)
+            cmd_exec(args)
 
         assert exc_info.value.code == 0
 
@@ -320,13 +295,15 @@ class TestCmdRun:
             json=False,
             markdown=False,
             quiet=True,
+            summary=False,
+            verbose=False,
             include_warnings=False,
             error_limit=20,
-            capture=None,
+            no_capture=False,
         )
 
         try:
-            cmd_run(args)
+            cmd_exec(args)
         except SystemExit:
             pass
 
@@ -343,13 +320,15 @@ class TestCmdRun:
             json=False,
             markdown=False,
             quiet=True,
+            summary=False,
+            verbose=False,
             include_warnings=False,
             error_limit=20,
-            capture=None,
+            no_capture=False,
         )
 
         try:
-            cmd_run(args)
+            cmd_exec(args)
         except SystemExit:
             pass
 
@@ -390,26 +369,10 @@ Done
 class TestCmdEvent:
     """Tests for blq event command."""
 
-    def test_shows_event_details(self, initialized_project, sample_build_script, capsys):
+    def test_shows_event_details(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Show details for a specific event."""
         # Create a run first
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=True,
-            json=True,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
-
+        run_adhoc_command([str(sample_build_script)])
         capsys.readouterr()  # Clear output
 
         # Get event 1:1
@@ -420,25 +383,10 @@ class TestCmdEvent:
         assert "Event: 1:1" in captured.out
         assert "Severity:" in captured.out
 
-    def test_event_not_found(self, initialized_project, sample_build_script, capsys):
+    def test_event_not_found(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Error when event not found."""
         # First create some data so the view exists
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
+        run_adhoc_command([str(sample_build_script)])
         capsys.readouterr()  # Clear output
 
         # Now try to get a non-existent event
@@ -455,26 +403,10 @@ class TestCmdEvent:
 class TestCmdContext:
     """Tests for blq context command."""
 
-    def test_shows_context_lines(self, initialized_project, sample_build_script, capsys):
+    def test_shows_context_lines(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Show context lines around an event."""
         # Create a run with raw log
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=True,
-            json=True,  # This also keeps raw
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
-
+        run_adhoc_command([str(sample_build_script)])
         capsys.readouterr()
 
         # Get context for event 1:1
@@ -494,26 +426,10 @@ class TestCmdContext:
 class TestCmdErrors:
     """Tests for blq errors command."""
 
-    def test_shows_errors(self, initialized_project, sample_build_script, capsys):
+    def test_shows_errors(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Show recent errors."""
         # Create a run with errors
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
-
+        run_adhoc_command([str(sample_build_script)])
         capsys.readouterr()
 
         # Get errors
@@ -524,25 +440,9 @@ class TestCmdErrors:
         # Should show some error info
         assert len(captured.out) > 0
 
-    def test_errors_json_output(self, initialized_project, sample_build_script, capsys):
+    def test_errors_json_output(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Show errors in JSON format."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name=None,
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
-
+        run_adhoc_command([str(sample_build_script)])
         capsys.readouterr()
 
         args = argparse.Namespace(source=None, limit=10, compact=False, json=True)
@@ -558,25 +458,9 @@ class TestCmdErrors:
 class TestCmdStatus:
     """Tests for blq status command."""
 
-    def test_shows_status(self, initialized_project, sample_build_script, capsys):
+    def test_shows_status(self, initialized_project, sample_build_script, run_adhoc_command, capsys):
         """Show status of runs."""
-        args = argparse.Namespace(
-            command=[str(sample_build_script)],
-            name="build",
-            format="auto",
-            keep_raw=False,
-            json=False,
-            markdown=False,
-            quiet=True,
-            include_warnings=False,
-            error_limit=20,
-            capture=None,
-        )
-        try:
-            cmd_run(args)
-        except SystemExit:
-            pass
-
+        run_adhoc_command([str(sample_build_script)], name="build")
         capsys.readouterr()
 
         args = argparse.Namespace(verbose=False)

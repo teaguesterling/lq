@@ -3,7 +3,8 @@ blq CLI - Build Log Query command-line interface.
 
 Usage:
     blq init [--mcp]                  Initialize .lq directory
-    blq run <command>                 Run command and capture output
+    blq run <command>                 Run registered command (alias: r)
+    blq exec <command>                Execute ad-hoc command (alias: e)
     blq import <file> [--name NAME]   Import existing log file
     blq capture [--name NAME]         Capture from stdin
     blq status                        Show status of all sources
@@ -47,6 +48,7 @@ from blq.commands import (
     cmd_context,
     cmd_errors,
     cmd_event,
+    cmd_exec,
     cmd_filter,
     cmd_history,
     cmd_import,
@@ -232,6 +234,12 @@ def main() -> None:
     p_run.add_argument(
         "--error-limit", type=int, default=20, help="Max errors/warnings in output (default: 20)"
     )
+    p_run.add_argument(
+        "--register",
+        "-R",
+        action="store_true",
+        help="Register command if not already registered",
+    )
     p_run.set_defaults(func=cmd_run)
     # Capture control: runtime flags override command config
     capture_group = p_run.add_mutually_exclusive_group()
@@ -250,6 +258,38 @@ def main() -> None:
         dest="capture",
         help="Skip log capture, just run command",
     )
+
+    # exec - ad-hoc command execution (never uses registry)
+    p_exec = subparsers.add_parser(
+        "exec", aliases=["e"], help="Execute ad-hoc command and capture output"
+    )
+    p_exec.add_argument("command", nargs="+", help="Command to execute")
+    p_exec.add_argument("--name", "-n", help="Source name (default: command name)")
+    p_exec.add_argument("--format", "-f", default="auto", help="Parse format hint")
+    p_exec.add_argument("--keep-raw", "-r", action="store_true", help="Keep raw output file")
+    p_exec.add_argument("--json", "-j", action="store_true", help="Output structured JSON result")
+    p_exec.add_argument("--markdown", "-m", action="store_true", help="Output markdown summary")
+    p_exec.add_argument("--quiet", "-q", action="store_true", help="Suppress streaming output")
+    p_exec.add_argument(
+        "--summary", "-s", action="store_true", help="Show brief summary (errors/warnings count)"
+    )
+    p_exec.add_argument("--verbose", "-v", action="store_true", help="Show all blq status messages")
+    p_exec.add_argument(
+        "--include-warnings",
+        "-w",
+        action="store_true",
+        help="Include warnings in structured output",
+    )
+    p_exec.add_argument(
+        "--error-limit", type=int, default=20, help="Max errors/warnings in output (default: 20)"
+    )
+    p_exec.add_argument(
+        "--no-capture",
+        "-N",
+        action="store_true",
+        help="Skip log capture, just run command",
+    )
+    p_exec.set_defaults(func=cmd_exec)
 
     # import
     p_import = subparsers.add_parser("import", help="Import existing log file")
