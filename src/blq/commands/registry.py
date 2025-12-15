@@ -1,5 +1,5 @@
 """
-Command registry commands for lq CLI.
+Command registry commands for blq CLI.
 
 Handles listing, registering, and unregistering commands.
 """
@@ -10,7 +10,7 @@ import argparse
 import json
 import sys
 
-from lq.commands.core import (
+from blq.commands.core import (
     RegisteredCommand,
     ensure_initialized,
     load_commands,
@@ -25,7 +25,7 @@ def cmd_commands(args: argparse.Namespace) -> None:
 
     if not commands:
         print("No commands registered.")
-        print("Use 'lq register <name> <command>' to register a command.")
+        print("Use 'blq register <name> <command>' to register a command.")
         return
 
     if args.json:

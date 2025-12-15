@@ -1,4 +1,4 @@
-"""Tests for core lq functionality."""
+"""Tests for core blq functionality."""
 
 import argparse
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from lq.cli import (
+from blq.cli import (
     cmd_context,
     cmd_errors,
     cmd_event,
@@ -254,7 +254,7 @@ class TestWriteRunParquet:
 
 
 class TestCmdRun:
-    """Tests for lq run command."""
+    """Tests for blq run command."""
 
     def test_captures_output(self, initialized_project, sample_build_script, capsys):
         """Capture command output and parse errors."""
@@ -360,7 +360,7 @@ class TestCmdRun:
 
 
 class TestCmdImport:
-    """Tests for lq import command."""
+    """Tests for blq import command."""
 
     def test_imports_log_file(self, initialized_project, temp_dir, capsys):
         """Import an existing log file."""
@@ -388,7 +388,7 @@ Done
 
 
 class TestCmdEvent:
-    """Tests for lq event command."""
+    """Tests for blq event command."""
 
     def test_shows_event_details(self, initialized_project, sample_build_script, capsys):
         """Show details for a specific event."""
@@ -453,7 +453,7 @@ class TestCmdEvent:
 
 
 class TestCmdContext:
-    """Tests for lq context command."""
+    """Tests for blq context command."""
 
     def test_shows_context_lines(self, initialized_project, sample_build_script, capsys):
         """Show context lines around an event."""
@@ -492,7 +492,7 @@ class TestCmdContext:
 
 
 class TestCmdErrors:
-    """Tests for lq errors command."""
+    """Tests for blq errors command."""
 
     def test_shows_errors(self, initialized_project, sample_build_script, capsys):
         """Show recent errors."""
@@ -556,7 +556,7 @@ class TestCmdErrors:
 
 
 class TestCmdStatus:
-    """Tests for lq status command."""
+    """Tests for blq status command."""
 
     def test_shows_status(self, initialized_project, sample_build_script, capsys):
         """Show status of runs."""

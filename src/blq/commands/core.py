@@ -1,5 +1,5 @@
 """
-Core utilities and shared types for lq CLI commands.
+Core utilities and shared types for blq CLI commands.
 
 This module contains data classes, configuration, and utility functions
 that are shared across multiple commands.
@@ -22,7 +22,7 @@ import duckdb
 import pandas as pd
 import yaml
 
-from lq.query import LogStore
+from blq.query import LogStore
 
 # ============================================================================
 # Result Types
@@ -215,8 +215,8 @@ DEFAULT_CAPTURE_ENV = [
 class ProjectInfo:
     """Project identity derived from git remote."""
 
-    namespace: str | None = None  # e.g., "teaguesterling" from github.com/teaguesterling/lq
-    project: str | None = None  # e.g., "lq"
+    namespace: str | None = None  # e.g., "teaguesterling" from github.com/teaguesterling/blq-cli
+    project: str | None = None  # e.g., "blq"
 
     def is_detected(self) -> bool:
         """Return True if project info was successfully detected."""
@@ -471,7 +471,7 @@ def ensure_initialized() -> Path:
     """Ensure .lq directory exists."""
     lq_dir = get_lq_dir()
     if lq_dir is None or not lq_dir.exists():
-        print("Error: .lq not initialized. Run 'lq init' first.", file=sys.stderr)
+        print("Error: .lq not initialized. Run 'blq init' first.", file=sys.stderr)
         sys.exit(1)
     return lq_dir
 

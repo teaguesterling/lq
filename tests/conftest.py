@@ -1,4 +1,4 @@
-"""Shared fixtures for lq tests."""
+"""Shared fixtures for blq tests."""
 
 import os
 import shutil
@@ -27,7 +27,7 @@ def lq_dir(temp_dir):
     # Copy schema.sql from the package
     from importlib import resources
 
-    schema_content = resources.files("lq").joinpath("schema.sql").read_text()
+    schema_content = resources.files("blq").joinpath("schema.sql").read_text()
     (lq_path / "schema.sql").write_text(schema_content)
 
     return lq_path
@@ -44,10 +44,10 @@ def chdir_temp(temp_dir):
 
 @pytest.fixture
 def initialized_project(chdir_temp):
-    """A project directory with lq initialized."""
+    """A project directory with blq initialized."""
     import argparse
 
-    from lq.cli import cmd_init
+    from blq.cli import cmd_init
 
     args = argparse.Namespace()
     cmd_init(args)

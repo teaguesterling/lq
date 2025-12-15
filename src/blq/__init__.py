@@ -1,10 +1,10 @@
 """
-lq - Log Query
+blq - Log Query
 
 Capture and query build/test logs with DuckDB.
 
 Example usage:
-    from lq import LogStore, LogQuery
+    from blq import LogStore, LogQuery
 
     # Query stored events
     store = LogStore.open()
@@ -16,6 +16,6 @@ Example usage:
 
 __version__ = "0.1.0"
 
-from lq.query import LogQuery, LogQueryGrouped, LogStore
+from blq.query import LogQuery, LogQueryGrouped, LogStore
 
 __all__ = ["LogQuery", "LogStore", "LogQueryGrouped", "__version__"]

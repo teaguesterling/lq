@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "blq-cli"
 version = "0.1.0"
-description = "Log Query - capture and query build/test logs with DuckDB"
+description = "Buidl Log Query - capture and query build/test logs with DuckDB"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -50,15 +50,15 @@ mcp = [
 ]
 
 [project.scripts]
-lq = "lq.cli:main"
+blq = "blq.cli:main"
 
 [project.urls]
-Homepage = "https://lq-cli.readthedocs.com/"
-Repository = "https://github.com/teaguesterling/lq"
-Issues = "https://github.com/teaguesterling/lq/issues"
+Homepage = "https://blq-cli.readthedocs.com/"
+Repository = "https://github.com/teaguesterling/blq-cli"
+Issues = "https://github.com/teaguesterling/blq-cli/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lq"]
+packages = ["src/blq"]
 
 [tool.ruff]
 target-version = "py310"

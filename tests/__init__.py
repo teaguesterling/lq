@@ -1,1 +1,1 @@
-"""Tests for lq package."""
+"""Tests for blq-cli package."""

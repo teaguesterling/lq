@@ -1,5 +1,5 @@
 """
-Serve command for lq CLI.
+Serve command for blq CLI.
 
 Handles starting the MCP server for AI agent integration.
 """
@@ -9,16 +9,16 @@ from __future__ import annotations
 import argparse
 import sys
 
-from lq.commands.core import get_lq_dir
+from blq.commands.core import get_lq_dir
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
     """Start the MCP server for AI agent integration."""
     try:
-        from lq.serve import serve
+        from blq.serve import serve
     except ImportError:
         print("Error: MCP dependencies not installed.", file=sys.stderr)
-        print("Install with: pip install lq[mcp]", file=sys.stderr)
+        print("Install with: pip install blq-cli[mcp]", file=sys.stderr)
         sys.exit(1)
 
     # Ensure we're in an initialized directory

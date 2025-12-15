@@ -1,5 +1,5 @@
 """
-Execution commands for lq CLI.
+Execution commands for blq CLI.
 
 Handles running commands, importing logs, and capturing stdin.
 """
@@ -16,7 +16,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from lq.commands.core import (
+from blq.commands.core import (
     RAW_DIR,
     EventSummary,
     LqConfig,
@@ -33,7 +33,7 @@ from lq.commands.core import (
 )
 
 # Logger for lq status messages
-logger = logging.getLogger("lq")
+logger = logging.getLogger("blq-cli")
 
 
 def _find_similar_commands(name: str, registered: list[str], max_results: int = 3) -> list[str]:

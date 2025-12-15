@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from lq.cli import (
+from blq.cli import (
     EventRef,
     EventSummary,
     RunResult,

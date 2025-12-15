@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from lq.cli import (
+from blq.cli import (
     RegisteredCommand,
     load_commands,
     save_commands,
@@ -141,7 +141,7 @@ class TestCommandRegistryCLI:
         """Register a new command."""
         import argparse
 
-        from lq.cli import cmd_register
+        from blq.cli import cmd_register
 
         args = argparse.Namespace(
             name="build",
@@ -167,7 +167,7 @@ class TestCommandRegistryCLI:
         """Force overwrite existing command."""
         import argparse
 
-        from lq.cli import cmd_register
+        from blq.cli import cmd_register
 
         # Register first time
         args = argparse.Namespace(
@@ -201,7 +201,7 @@ class TestCommandRegistryCLI:
         """Refuse to overwrite without force flag."""
         import argparse
 
-        from lq.cli import cmd_register
+        from blq.cli import cmd_register
 
         # Register first time
         args = argparse.Namespace(
@@ -237,7 +237,7 @@ class TestCommandRegistryCLI:
         """Unregister an existing command."""
         import argparse
 
-        from lq.cli import cmd_register, cmd_unregister
+        from blq.cli import cmd_register, cmd_unregister
 
         # Register first
         args = argparse.Namespace(
@@ -265,7 +265,7 @@ class TestCommandRegistryCLI:
         """Unregister nonexistent command fails."""
         import argparse
 
-        from lq.cli import cmd_unregister
+        from blq.cli import cmd_unregister
 
         args = argparse.Namespace(name="nonexistent")
 
@@ -280,7 +280,7 @@ class TestCommandRegistryCLI:
         """List commands when none registered."""
         import argparse
 
-        from lq.cli import cmd_commands
+        from blq.cli import cmd_commands
 
         args = argparse.Namespace(json=False)
         cmd_commands(args)
@@ -292,7 +292,7 @@ class TestCommandRegistryCLI:
         """List registered commands."""
         import argparse
 
-        from lq.cli import cmd_commands, cmd_register
+        from blq.cli import cmd_commands, cmd_register
 
         # Register some commands
         for name, cmd, desc in [
@@ -326,7 +326,7 @@ class TestCommandRegistryCLI:
         """List commands in JSON format."""
         import argparse
 
-        from lq.cli import cmd_commands, cmd_register
+        from blq.cli import cmd_commands, cmd_register
 
         args = argparse.Namespace(
             name="build",
@@ -358,7 +358,7 @@ class TestRunRegisteredCommand:
         """Run a command by its registered name."""
         import argparse
 
-        from lq.cli import cmd_register, cmd_run
+        from blq.cli import cmd_register, cmd_run
 
         # Register the command
         args = argparse.Namespace(
@@ -405,7 +405,7 @@ class TestRunRegisteredCommand:
         """Run literal command when name is not registered."""
         import argparse
 
-        from lq.cli import cmd_run
+        from blq.cli import cmd_run
 
         args = argparse.Namespace(
             command=[str(sample_success_script)],
@@ -434,7 +434,7 @@ class TestRunRegisteredCommand:
         """Running registered command uses its stored format hint."""
         import argparse
 
-        from lq.cli import cmd_register, load_commands
+        from blq.cli import cmd_register, load_commands
 
         # Register with specific format
         args = argparse.Namespace(
@@ -455,7 +455,7 @@ class TestRunRegisteredCommand:
         """Multi-arg command is treated as literal, not registered name."""
         import argparse
 
-        from lq.cli import cmd_register, cmd_run
+        from blq.cli import cmd_register, cmd_run
 
         # Register 'build' command
         args = argparse.Namespace(

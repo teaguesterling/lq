@@ -1,4 +1,4 @@
-"""Tests for lq query and filter commands."""
+"""Tests for blq query and filter commands."""
 
 import argparse
 import json
@@ -8,7 +8,7 @@ import duckdb
 import pandas as pd
 import pytest
 
-from lq.cli import (
+from blq.cli import (
     ConnectionFactory,
     cmd_filter,
     cmd_query,

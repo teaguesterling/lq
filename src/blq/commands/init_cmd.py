@@ -1,5 +1,5 @@
 """
-Initialization command for lq CLI.
+Initialization command for blq CLI.
 
 Handles project initialization, extension installation, and command detection.
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from lq.commands.core import (
+from blq.commands.core import (
     COMMANDS_FILE,
     LOGS_DIR,
     LQ_DIR,
@@ -40,8 +40,8 @@ MCP_CONFIG_FILE = ".mcp.json"
 
 MCP_CONFIG_TEMPLATE = """{
   "mcpServers": {
-    "lq": {
-      "command": "lq",
+    "blq": {
+      "command": "blq",
       "args": ["serve"]
     }
   }
@@ -205,13 +205,13 @@ def _contains_lq_reference(text: str) -> bool:
     """Check if text contains a reference to lq as a command (not just mentioned).
 
     We want to detect:
-    - "lq run ..." - lq used as a command
-    - "| lq" - lq in a pipeline
-    - "./lq" - lq as executable
+    - "blq run ..." - lq used as a command
+    - "| blq" - blq in a pipeline
+    - "./blq" - blq as executable
 
     But NOT:
-    - "pip install lq" or "pip install -e .[dev]" - installing lq
-    - Comments mentioning lq
+    - "pip install blq-cli" or "pip install -e .[dev]" - installing blq-cli
+    - Comments mentioning blq
     """
     # Skip lines that are just installing packages
     lines = text.split("\n")
@@ -590,7 +590,7 @@ def _ensure_commands_file(lq_dir: Path, verbose: bool = False) -> None:
     """Ensure commands.yaml exists, creating empty one if needed."""
     commands_path = lq_dir / COMMANDS_FILE
     if not commands_path.exists():
-        commands_path.write_text("# lq registered commands\ncommands: {}\n")
+        commands_path.write_text("# blq registered commands\ncommands: {}\n")
         if verbose:
             print(f"  Created {COMMANDS_FILE}")
 
@@ -599,7 +599,7 @@ def _reinit_config_files(lq_dir: Path, args: argparse.Namespace) -> None:
     """Reinitialize configuration files (schema, config, commands)."""
     # Update schema file
     try:
-        schema_content = resources.files("lq").joinpath("schema.sql").read_text()
+        schema_content = resources.files("blq").joinpath("schema.sql").read_text()
         (lq_dir / SCHEMA_FILE).write_text(schema_content)
         print(f"  Updated {SCHEMA_FILE}")
     except Exception as e:
@@ -657,7 +657,7 @@ def cmd_init(args: argparse.Namespace) -> None:
 
     # Copy schema file from package
     try:
-        schema_content = resources.files("lq").joinpath("schema.sql").read_text()
+        schema_content = resources.files("blq").joinpath("schema.sql").read_text()
         (lq_dir / SCHEMA_FILE).write_text(schema_content)
     except Exception as e:
         print(f"Warning: Could not copy schema.sql: {e}", file=sys.stderr)

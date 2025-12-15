@@ -1,5 +1,5 @@
 """
-Query and filter commands for lq CLI.
+Query and filter commands for blq CLI.
 
 Handles querying logs, filtering, SQL queries, and interactive shell.
 """
@@ -15,12 +15,12 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-from lq.commands.core import (
+from blq.commands.core import (
     SCHEMA_FILE,
     ensure_initialized,
     get_store_for_args,
 )
-from lq.query import LogQuery, LogStore
+from blq.query import LogQuery, LogStore
 
 
 def format_query_output(
@@ -86,8 +86,8 @@ def query_source(
             print(
                 "Error: duck_hunt extension required for querying files directly.", file=sys.stderr
             )
-            print("Run 'lq init' to install required extensions.", file=sys.stderr)
-            print(f"Or import the file first: lq import {source}", file=sys.stderr)
+            print("Run 'blq init' to install required extensions.", file=sys.stderr)
+            print(f"Or import the file first: blq import {source}", file=sys.stderr)
             raise
     else:
         # Query stored data
@@ -298,7 +298,7 @@ def cmd_shell(args: argparse.Namespace) -> None:
 
     # Create init file
     init_sql = """
-.prompt 'lq> '
+.prompt 'blq> '
 LOAD duck_hunt;
 """
     schema_path = lq_dir / SCHEMA_FILE

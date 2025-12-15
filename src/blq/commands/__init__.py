@@ -1,13 +1,13 @@
 """
-lq commands module.
+blq commands module.
 
-This module provides modular command implementations for the lq CLI.
+This module provides modular command implementations for the blq CLI.
 """
 
-from lq.commands.events import cmd_context, cmd_event
-from lq.commands.execution import cmd_capture, cmd_import, cmd_run
-from lq.commands.init_cmd import cmd_init
-from lq.commands.management import (
+from blq.commands.events import cmd_context, cmd_event
+from blq.commands.execution import cmd_capture, cmd_import, cmd_run
+from blq.commands.init_cmd import cmd_init
+from blq.commands.management import (
     cmd_errors,
     cmd_history,
     cmd_prune,
@@ -15,10 +15,10 @@ from lq.commands.management import (
     cmd_summary,
     cmd_warnings,
 )
-from lq.commands.query_cmd import cmd_filter, cmd_query, cmd_shell, cmd_sql
-from lq.commands.registry import cmd_commands, cmd_register, cmd_unregister
-from lq.commands.serve_cmd import cmd_serve
-from lq.commands.sync_cmd import cmd_sync
+from blq.commands.query_cmd import cmd_filter, cmd_query, cmd_shell, cmd_sql
+from blq.commands.registry import cmd_commands, cmd_register, cmd_unregister
+from blq.commands.serve_cmd import cmd_serve
+from blq.commands.sync_cmd import cmd_sync
 
 __all__ = [
     # Init

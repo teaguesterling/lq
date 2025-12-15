@@ -1,5 +1,5 @@
 """
-Event commands for lq CLI.
+Event commands for blq CLI.
 
 Handles viewing event details and context.
 """
@@ -12,12 +12,12 @@ import sys
 
 import duckdb
 
-from lq.commands.core import (
+from blq.commands.core import (
     RAW_DIR,
     EventRef,
     ensure_initialized,
 )
-from lq.query import LogStore
+from blq.query import LogStore
 
 
 def cmd_event(args: argparse.Namespace) -> None:

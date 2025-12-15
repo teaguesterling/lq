@@ -1,5 +1,5 @@
 """
-Management commands for lq CLI.
+Management commands for blq CLI.
 
 Handles status, errors, warnings, summary, history, and prune operations.
 """
@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 import duckdb
 
-from lq.commands.core import (
+from blq.commands.core import (
     LOGS_DIR,
     ensure_initialized,
     get_store_for_args,

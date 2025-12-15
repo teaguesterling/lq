@@ -1,38 +1,38 @@
 """
-lq CLI - Log Query command-line interface.
+blq CLI - Log Query command-line interface.
 
 Usage:
-    lq init [--mcp]                  Initialize .lq directory
-    lq run <command>                 Run command and capture output
-    lq import <file> [--name NAME]   Import existing log file
-    lq capture [--name NAME]         Capture from stdin
-    lq status                        Show status of all sources
-    lq errors [--source S] [-n N]    Show recent errors
-    lq warnings [--source S] [-n N]  Show recent warnings
-    lq summary                       Aggregate summary
-    lq sql <query>                   Run arbitrary SQL
-    lq shell                         Interactive SQL shell
-    lq history [-n N]                Show run history
-    lq prune [--older-than DAYS]     Remove old logs
-    lq event <ref>                   Show event details by reference (e.g., 5:3)
-    lq query [options] [file...]     Query log files or stored events (alias: q)
-    lq filter [expr...] [file...]    Filter with simple syntax (alias: f)
-    lq sync [destination]            Sync logs to central location
-    lq serve [--transport T]         Start MCP server for AI agents
+    blq init [--mcp]                  Initialize .lq directory
+    blq run <command>                 Run command and capture output
+    blq import <file> [--name NAME]   Import existing log file
+    blq capture [--name NAME]         Capture from stdin
+    blq status                        Show status of all sources
+    blq errors [--source S] [-n N]    Show recent errors
+    blq warnings [--source S] [-n N]  Show recent warnings
+    blq summary                       Aggregate summary
+    blq sql <query>                   Run arbitrary SQL
+    blq shell                         Interactive SQL shell
+    blq history [-n N]                Show run history
+    blq prune [--older-than DAYS]     Remove old logs
+    blq event <ref>                   Show event details by reference (e.g., 5:3)
+    blq query [options] [file...]     Query log files or stored events (alias: q)
+    blq filter [expr...] [file...]    Filter with simple syntax (alias: f)
+    blq sync [destination]            Sync logs to central location
+    blq serve [--transport T]         Start MCP server for AI agents
 
 Query examples:
-    lq q build.log                           # all events from file
-    lq q -s file_path,message build.log      # select columns
-    lq q -f "severity='error'" build.log     # filter with SQL WHERE
-    lq q -f "severity='error'"               # query stored events
+    blq q build.log                           # all events from file
+    blq q -s file_path,message build.log      # select columns
+    blq q -f "severity='error'" build.log     # filter with SQL WHERE
+    blq q -f "severity='error'"               # query stored events
 
 Filter examples:
-    lq f severity=error build.log            # filter by exact match
-    lq f severity=error,warning build.log    # OR within field
-    lq f file_path~main build.log            # contains (LIKE)
-    lq f severity!=info build.log            # not equal
-    lq f -v severity=error build.log         # invert (grep -v style)
-    lq f -c severity=error build.log         # count matches only
+    blq f severity=error build.log            # filter by exact match
+    blq f severity=error,warning build.log    # OR within field
+    blq f file_path~main build.log            # contains (LIKE)
+    blq f severity!=info build.log            # not equal
+    blq f -v severity=error build.log         # invert (grep -v style)
+    blq f -c severity=error build.log         # count matches only
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ import argparse
 import logging
 import sys
 
-from lq.commands import (
+from blq.commands import (
     cmd_capture,
     cmd_commands,
     cmd_context,
@@ -64,7 +64,7 @@ from lq.commands import (
     cmd_unregister,
     cmd_warnings,
 )
-from lq.commands.core import (
+from blq.commands.core import (
     GLOBAL_PROJECTS_PATH,
     # Re-export commonly used items for backward compatibility
     ConnectionFactory,
@@ -86,7 +86,7 @@ from lq.commands.core import (
     save_commands,
     write_run_parquet,
 )
-from lq.commands.query_cmd import format_query_output, parse_filter_expression, query_source
+from blq.commands.query_cmd import format_query_output, parse_filter_expression, query_source
 
 # Re-export for backward compatibility
 __all__ = [
@@ -140,7 +140,7 @@ __all__ = [
 
 def _setup_logging() -> None:
     """Configure the lq logger with stderr handler."""
-    lq_logger = logging.getLogger("lq")
+    lq_logger = logging.getLogger("blq-cli")
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter("%(message)s"))
     lq_logger.addHandler(handler)
@@ -152,7 +152,7 @@ def main() -> None:
     _setup_logging()
 
     parser = argparse.ArgumentParser(
-        description="lq - Log Query CLI",
+        description="blq - Build Log Query CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -222,7 +222,7 @@ def main() -> None:
     p_run.add_argument(
         "--summary", "-s", action="store_true", help="Show brief summary (errors/warnings count)"
     )
-    p_run.add_argument("--verbose", "-v", action="store_true", help="Show all lq status messages")
+    p_run.add_argument("--verbose", "-v", action="store_true", help="Show all blq status messages")
     p_run.add_argument(
         "--include-warnings",
         "-w",

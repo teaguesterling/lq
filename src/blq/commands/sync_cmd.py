@@ -1,5 +1,5 @@
 """
-Sync command for lq CLI.
+Sync command for blq CLI.
 
 Handles syncing logs to a central location.
 """
@@ -12,7 +12,7 @@ import socket
 import sys
 from pathlib import Path
 
-from lq.commands.core import (
+from blq.commands.core import (
     GLOBAL_LQ_DIR,
     LOGS_DIR,
     PROJECTS_DIR,
@@ -70,7 +70,7 @@ def cmd_sync(args: argparse.Namespace) -> None:
     # Validate project info exists
     if not config.namespace or not config.project:
         print("Error: Project namespace/project not configured.", file=sys.stderr)
-        print("Run 'lq init --namespace X --project Y' or set in .lq/config.yaml", file=sys.stderr)
+        print("Run 'blq init --namespace X --project Y' or set in .lq/config.yaml", file=sys.stderr)
         sys.exit(1)
 
     # Get sync parameters

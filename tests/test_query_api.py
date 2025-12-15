@@ -7,8 +7,8 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from lq.cli import cmd_run
-from lq.query import LogQuery, LogStore
+from blq.cli import cmd_run
+from blq.query import LogQuery, LogStore
 
 # ============================================================================
 # LogQuery Tests

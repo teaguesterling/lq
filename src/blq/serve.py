@@ -1,11 +1,11 @@
 """
-MCP server for lq.
+MCP server for blq.
 
 Provides tools, resources, and prompts for AI agent integration.
 
 Usage:
-    lq serve                    # stdio transport (for Claude Desktop)
-    lq serve --transport sse    # SSE transport (for HTTP clients)
+    blq serve                    # stdio transport (for Claude Desktop)
+    blq serve --transport sse    # SSE transport (for HTTP clients)
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from typing import Any
 import pandas as pd
 from fastmcp import FastMCP
 
-from lq.query import LogStore
+from blq.query import LogStore
 
 
 def _to_json_safe(value: Any) -> Any:
@@ -30,9 +30,9 @@ def _to_json_safe(value: Any) -> Any:
 
 # Create the MCP server
 mcp = FastMCP(
-    "lq",
+    "blq",
     instructions=(
-        "Log Query - capture and query build/test logs. "
+        "Build Log Query - capture and query build/test logs. "
         "Use tools to run builds, query errors, and analyze results."
     ),
 )
@@ -64,8 +64,8 @@ def _parse_ref(ref: str) -> tuple[int, int]:
 
 def _run_impl(command: str, args: list[str] | None = None, timeout: int = 300) -> dict[str, Any]:
     """Implementation of run command."""
-    # Build command for lq run
-    cmd_parts = ["lq", "run", "--json", "--quiet"]
+    # Build command for blq run
+    cmd_parts = ["blq", "run", "--json", "--quiet"]
     cmd_parts.append(command)
     if args:
         cmd_parts.extend(args)
@@ -509,7 +509,7 @@ def _register_command_impl(
 ) -> dict[str, Any]:
     """Implementation of register_command."""
     try:
-        from lq.cli import RegisteredCommand, load_commands, save_commands
+        from blq.cli import RegisteredCommand, load_commands, save_commands
 
         lq_dir = Path(".lq")
 
@@ -551,7 +551,7 @@ def _register_command_impl(
 def _unregister_command_impl(name: str) -> dict[str, Any]:
     """Implementation of unregister_command."""
     try:
-        from lq.cli import load_commands, save_commands
+        from blq.cli import load_commands, save_commands
 
         lq_dir = Path(".lq")
 
@@ -574,7 +574,7 @@ def _unregister_command_impl(name: str) -> dict[str, Any]:
 def _list_commands_impl() -> dict[str, Any]:
     """Implementation of list_commands."""
     try:
-        from lq.cli import load_commands
+        from blq.cli import load_commands
 
         lq_dir = Path(".lq")
 
@@ -823,7 +823,7 @@ def resource_event(ref: str) -> str:
 def resource_commands() -> str:
     """Registered commands."""
     try:
-        from lq.cli import load_commands
+        from blq.cli import load_commands
 
         lq_dir = Path(".lq")
         if lq_dir.exists():

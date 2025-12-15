@@ -1,11 +1,11 @@
 """
-Pythonic query API for lq.
+Pythonic query API for blq.
 
 This module provides a fluent interface for querying log data,
 built on top of DuckDB's relational API.
 
 Example usage:
-    from lq.query import LogQuery, LogStore
+    from blq.query import LogQuery, LogStore
 
     # Query stored events
     store = LogStore.open()
@@ -159,7 +159,7 @@ class LogQuery:
         except duckdb.Error:
             raise duckdb.Error(
                 "duck_hunt extension required for parsing log files. "
-                "Run 'lq init' to install required extensions."
+                "Run 'blq init' to install required extensions."
             )
 
         path_str = str(Path(path).resolve())
@@ -593,7 +593,7 @@ class LogStore:
             lq_path = p / ".lq"
             if lq_path.exists():
                 return lq_path
-        raise FileNotFoundError(".lq directory not found. Run 'lq init' to initialize.")
+        raise FileNotFoundError(".lq directory not found. Run 'blq init' to initialize.")
 
     def _ensure_schema(self) -> None:
         """Load schema if not already loaded."""

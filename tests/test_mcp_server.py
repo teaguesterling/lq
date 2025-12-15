@@ -1,4 +1,4 @@
-"""Tests for the lq MCP server.
+"""Tests for the blq MCP server.
 
 Uses FastMCP's in-memory transport for efficient testing without
 subprocess or network overhead.
@@ -27,10 +27,10 @@ def mcp_server(initialized_project, sample_build_script):
     import subprocess
 
     # Import here to avoid errors if fastmcp not installed
-    from lq.serve import mcp
+    from blq.serve import mcp
 
     subprocess.run(
-        ["lq", "run", "--quiet", str(sample_build_script)],
+        ["blq", "run", "--quiet", str(sample_build_script)],
         capture_output=True,
     )
 
@@ -40,7 +40,7 @@ def mcp_server(initialized_project, sample_build_script):
 @pytest.fixture
 def mcp_server_empty(initialized_project):
     """Create MCP server with initialized project but no data."""
-    from lq.serve import mcp
+    from blq.serve import mcp
 
     return mcp
 
