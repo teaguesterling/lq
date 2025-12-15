@@ -12,12 +12,12 @@ from __future__ import annotations
 
 import json
 import subprocess
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from fastmcp import FastMCP
 
+from blq.commands.core import get_lq_dir
 from blq.query import LogStore
 
 
@@ -579,10 +579,10 @@ def _register_command_impl(
     try:
         from blq.cli import RegisteredCommand, load_commands, save_commands
 
-        lq_dir = Path(".lq")
+        lq_dir = get_lq_dir()
 
-        if not lq_dir.exists():
-            return {"success": False, "error": "No lq repository found. Run 'lq init' first."}
+        if lq_dir is None or not lq_dir.exists():
+            return {"success": False, "error": "No lq repository found. Run 'blq init' first."}
 
         commands = load_commands(lq_dir)
 
@@ -621,9 +621,9 @@ def _unregister_command_impl(name: str) -> dict[str, Any]:
     try:
         from blq.cli import load_commands, save_commands
 
-        lq_dir = Path(".lq")
+        lq_dir = get_lq_dir()
 
-        if not lq_dir.exists():
+        if lq_dir is None or not lq_dir.exists():
             return {"success": False, "error": "No lq repository found."}
 
         commands = load_commands(lq_dir)
@@ -644,9 +644,9 @@ def _list_commands_impl() -> dict[str, Any]:
     try:
         from blq.cli import load_commands
 
-        lq_dir = Path(".lq")
+        lq_dir = get_lq_dir()
 
-        if not lq_dir.exists():
+        if lq_dir is None or not lq_dir.exists():
             return {"commands": []}
 
         commands = load_commands(lq_dir)
@@ -908,8 +908,8 @@ def resource_commands() -> str:
     try:
         from blq.cli import load_commands
 
-        lq_dir = Path(".lq")
-        if lq_dir.exists():
+        lq_dir = get_lq_dir()
+        if lq_dir is not None and lq_dir.exists():
             commands = load_commands(lq_dir)
             return json.dumps({"commands": commands}, indent=2, default=str)
     except Exception:

@@ -21,13 +21,10 @@ from blq.commands.core import (
     LQ_DIR,
     RAW_DIR,
     SCHEMA_FILE,
+    BlqConfig,
     ConnectionFactory,
-    LqConfig,
     RegisteredCommand,
     detect_project_info,
-    load_commands,
-    save_commands,
-    save_config,
 )
 
 # Detection mode constants
@@ -545,8 +542,9 @@ def _detect_and_register_commands(lq_dir: Path, auto_yes: bool, mode: str = DETE
         print("\n  No build systems detected.")
         return
 
-    # Load existing commands to avoid duplicates
-    existing = load_commands(lq_dir)
+    # Load existing config to avoid duplicates
+    config = BlqConfig.load(lq_dir)
+    existing = config.commands
     new_commands = [(n, c, d) for n, c, d in detected if n not in existing]
 
     if not new_commands:
@@ -565,7 +563,7 @@ def _detect_and_register_commands(lq_dir: Path, auto_yes: bool, mode: str = DETE
                 cmd=cmd,
                 description=desc,
             )
-        save_commands(lq_dir, existing)
+        config.save_commands()
         print(f"  Registered {len(new_commands)} command(s).")
     else:
         # Prompt user
@@ -578,7 +576,7 @@ def _detect_and_register_commands(lq_dir: Path, auto_yes: bool, mode: str = DETE
                         cmd=cmd,
                         description=desc,
                     )
-                save_commands(lq_dir, existing)
+                config.save_commands()
                 print(f"  Registered {len(new_commands)} command(s).")
             else:
                 print("  Skipped command registration.")
@@ -610,8 +608,8 @@ def _reinit_config_files(lq_dir: Path, args: argparse.Namespace) -> None:
     namespace = getattr(args, "namespace", None) or project_info.namespace
     project = getattr(args, "project", None) or project_info.project
 
-    config = LqConfig(namespace=namespace, project=project)
-    save_config(lq_dir, config)
+    config = BlqConfig(lq_dir=lq_dir, namespace=namespace, project=project)
+    config.save()
     print(f"  Updated config.yaml (project: {namespace}/{project})")
 
     # Ensure commands.yaml exists
@@ -669,11 +667,12 @@ def cmd_init(args: argparse.Namespace) -> None:
     namespace = getattr(args, "namespace", None) or project_info.namespace
     project = getattr(args, "project", None) or project_info.project
 
-    config = LqConfig(
+    config = BlqConfig(
+        lq_dir=lq_dir,
         namespace=namespace,
         project=project,
     )
-    save_config(lq_dir, config)
+    config.save()
 
     # Create empty commands.yaml
     _ensure_commands_file(lq_dir)

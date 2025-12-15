@@ -380,6 +380,200 @@ def save_config(lq_dir: Path, config: LqConfig) -> None:
 
 
 # ============================================================================
+# Unified Configuration (BlqConfig)
+# ============================================================================
+
+
+@dataclass
+class BlqConfig:
+    """Unified configuration for blq.
+
+    This class consolidates path management, settings, and command registry
+    into a single configuration object. It provides:
+
+    - Core path management (lq_dir and derived paths)
+    - Settings from config.yaml (capture_env, namespace, project)
+    - Lazy-loaded command registry
+    - Factory methods for finding/loading configuration
+
+    Example usage:
+        # Find and load config from current directory
+        config = BlqConfig.ensure()  # Exits with error if not initialized
+
+        # Access paths
+        logs_path = config.logs_dir
+        schema_path = config.schema_path
+
+        # Access commands
+        if "build" in config.commands:
+            cmd = config.commands["build"]
+    """
+
+    # Core path (everything derives from this)
+    lq_dir: Path
+
+    # Settings from config.yaml
+    capture_env: list[str] = field(default_factory=lambda: DEFAULT_CAPTURE_ENV.copy())
+    namespace: str | None = None
+    project: str | None = None
+
+    # Lazy-loaded commands (private, access via commands property)
+    _commands: dict | None = field(default=None, repr=False)
+
+    # Computed paths
+    @property
+    def logs_dir(self) -> Path:
+        """Path to logs directory (.lq/logs)."""
+        return self.lq_dir / LOGS_DIR
+
+    @property
+    def raw_dir(self) -> Path:
+        """Path to raw logs directory (.lq/raw)."""
+        return self.lq_dir / RAW_DIR
+
+    @property
+    def schema_path(self) -> Path:
+        """Path to schema file (.lq/schema.sql)."""
+        return self.lq_dir / SCHEMA_FILE
+
+    @property
+    def config_path(self) -> Path:
+        """Path to config file (.lq/config.yaml)."""
+        return self.lq_dir / CONFIG_FILE
+
+    @property
+    def commands_path(self) -> Path:
+        """Path to commands file (.lq/commands.yaml)."""
+        return self.lq_dir / COMMANDS_FILE
+
+    @property
+    def commands(self) -> dict:
+        """Lazy-load commands from commands.yaml.
+
+        Returns:
+            Dict mapping command names to RegisteredCommand instances.
+        """
+        if self._commands is None:
+            # Use the existing load_commands function
+            self._commands = load_commands(self.lq_dir)
+        return self._commands
+
+    def reload_commands(self) -> None:
+        """Force reload of commands from disk."""
+        self._commands = None
+
+    @classmethod
+    def find(cls, start_dir: Path | None = None) -> BlqConfig | None:
+        """Find .lq directory in start_dir or parents and load config.
+
+        Args:
+            start_dir: Directory to start searching from (default: cwd)
+
+        Returns:
+            BlqConfig if found, None otherwise.
+        """
+        if start_dir is None:
+            start_dir = Path.cwd()
+
+        # Search current directory and parents
+        for p in [start_dir, *list(start_dir.parents)]:
+            lq_path = p / LQ_DIR
+            if lq_path.exists() and lq_path.is_dir():
+                return cls.load(lq_path)
+
+        return None
+
+    @classmethod
+    def load(cls, lq_dir: Path) -> BlqConfig:
+        """Load configuration from an existing .lq directory.
+
+        Args:
+            lq_dir: Path to the .lq directory
+
+        Returns:
+            BlqConfig loaded from config.yaml (or defaults)
+        """
+        config_path = lq_dir / CONFIG_FILE
+
+        # Start with defaults
+        capture_env = DEFAULT_CAPTURE_ENV.copy()
+        namespace = None
+        project = None
+
+        # Load from config.yaml if it exists
+        if config_path.exists():
+            with open(config_path) as f:
+                data = yaml.safe_load(f) or {}
+
+            # Load capture_env
+            loaded_env = data.get("capture_env")
+            if isinstance(loaded_env, list):
+                capture_env = loaded_env
+
+            # Load project info
+            project_data = data.get("project", {})
+            namespace = project_data.get("namespace")
+            project = project_data.get("project")
+
+        return cls(
+            lq_dir=lq_dir,
+            capture_env=capture_env,
+            namespace=namespace,
+            project=project,
+        )
+
+    @classmethod
+    def ensure(cls, start_dir: Path | None = None) -> BlqConfig:
+        """Find configuration or exit with error.
+
+        This is a convenience method for CLI commands that require
+        an initialized project.
+
+        Args:
+            start_dir: Directory to start searching from (default: cwd)
+
+        Returns:
+            BlqConfig if found
+
+        Raises:
+            SystemExit: If .lq directory not found
+        """
+        config = cls.find(start_dir)
+        if config is None:
+            print("Error: .lq not initialized. Run 'blq init' first.", file=sys.stderr)
+            sys.exit(1)
+        return config
+
+    def save(self) -> None:
+        """Save configuration to config.yaml."""
+        data: dict[str, Any] = {"capture_env": self.capture_env}
+
+        # Include project info if present
+        if self.namespace or self.project:
+            data["project"] = {}
+            if self.namespace:
+                data["project"]["namespace"] = self.namespace
+            if self.project:
+                data["project"]["project"] = self.project
+
+        with open(self.config_path, "w") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+    def save_commands(self) -> None:
+        """Save commands to commands.yaml."""
+        if self._commands is not None:
+            save_commands(self.lq_dir, self._commands)
+
+    def to_lq_config(self) -> LqConfig:
+        """Convert to legacy LqConfig for backward compatibility."""
+        return LqConfig(
+            capture_env=self.capture_env,
+            namespace=self.namespace,
+            project=self.project,
+        )
+
+
+# ============================================================================
 # Command Registry
 # ============================================================================
 

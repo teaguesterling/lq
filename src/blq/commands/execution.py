@@ -18,16 +18,14 @@ from pathlib import Path
 
 from blq.commands.core import (
     RAW_DIR,
+    BlqConfig,
     EventSummary,
-    LqConfig,
     RunResult,
     capture_ci_info,
     capture_environment,
     capture_git_info,
-    ensure_initialized,
     find_executable,
     get_next_run_id,
-    load_commands,
     parse_log_content,
     write_run_parquet,
 )
@@ -82,15 +80,14 @@ def cmd_run(args: argparse.Namespace) -> None:
     Unlike exec, this command only runs registered commands from the registry.
     Use --register to register a new command while running it.
     """
-    from blq.commands.core import RegisteredCommand, save_commands
+    from blq.commands.core import RegisteredCommand
 
-    lq_dir = ensure_initialized()
-
-    # Load config for default environment capture
-    config = LqConfig.load(lq_dir)
+    # Get unified config (finds .lq, loads settings and commands)
+    config = BlqConfig.ensure()
+    lq_dir = config.lq_dir
 
     # Check if first argument is a registered command name
-    registered_commands = load_commands(lq_dir)
+    registered_commands = config.commands
     first_arg = args.command[0]
 
     # Build list of env vars to capture (config defaults + command-specific)
@@ -122,7 +119,7 @@ def cmd_run(args: argparse.Namespace) -> None:
             format=args.format,
             capture=True,
         )
-        save_commands(lq_dir, registered_commands)
+        config.save_commands()
         logger.warning(f"Registered command '{cmd_name}': {cmd_str}")
 
         command = cmd_str
@@ -306,10 +303,9 @@ def cmd_exec(args: argparse.Namespace) -> None:
     Unlike cmd_run, this always treats the command as a shell command
     and never looks up the command registry.
     """
-    lq_dir = ensure_initialized()
-
-    # Load config for default environment capture
-    config = LqConfig.load(lq_dir)
+    # Get unified config (finds .lq, loads settings)
+    config = BlqConfig.ensure()
+    lq_dir = config.lq_dir
     capture_env_vars = config.capture_env.copy()
 
     # Build command from args - always treat as literal shell command
@@ -474,7 +470,8 @@ def cmd_exec(args: argparse.Namespace) -> None:
 
 def cmd_import(args: argparse.Namespace) -> None:
     """Import an existing log file."""
-    lq_dir = ensure_initialized()
+    config = BlqConfig.ensure()
+    lq_dir = config.lq_dir
 
     filepath = Path(args.file)
     if not filepath.exists():
@@ -508,7 +505,8 @@ def cmd_import(args: argparse.Namespace) -> None:
 
 def cmd_capture(args: argparse.Namespace) -> None:
     """Capture from stdin."""
-    lq_dir = ensure_initialized()
+    config = BlqConfig.ensure()
+    lq_dir = config.lq_dir
 
     source_name = args.name or "stdin"
     run_id = get_next_run_id(lq_dir)

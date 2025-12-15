@@ -16,8 +16,7 @@ from blq.commands.core import (
     GLOBAL_LQ_DIR,
     LOGS_DIR,
     PROJECTS_DIR,
-    LqConfig,
-    ensure_initialized,
+    BlqConfig,
 )
 
 
@@ -64,8 +63,8 @@ def get_sync_target_path(
 
 def cmd_sync(args: argparse.Namespace) -> None:
     """Sync project logs to a central location."""
-    lq_dir = ensure_initialized()
-    config = LqConfig.load(lq_dir)
+    config = BlqConfig.ensure()
+    lq_dir = config.lq_dir
 
     # Validate project info exists
     if not config.namespace or not config.project:
