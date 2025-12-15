@@ -35,11 +35,11 @@ jobs:
       - name: Build package
         run: python -m build
       
-      - name: Publish to TestPyPI
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+            # - name: Publish to TestPyPI
+            #   if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'testpypi'
+            #   uses: pypa/gh-action-pypi-publish@release/v1
+            #   with:
+            #     repository-url: https://test.pypi.org/legacy/
       
       - name: Publish to PyPI
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pypi')

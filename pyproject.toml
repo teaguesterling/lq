@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lq"
+name = "blq-cli"
 version = "0.1.0"
 description = "Log Query - capture and query build/test logs with DuckDB"
 readme = "README.md"
