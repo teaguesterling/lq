@@ -329,83 +329,6 @@ def detect_project_info() -> ProjectInfo:
     return ProjectInfo(namespace=namespace, project=project)
 
 
-@dataclass
-class LqConfig:
-    """Project configuration from config.yaml.
-
-    .. deprecated::
-        Use :class:`BlqConfig` instead, which provides unified configuration
-        management including path handling and command registry.
-    """
-
-    capture_env: list[str] = field(default_factory=lambda: DEFAULT_CAPTURE_ENV.copy())
-    namespace: str | None = None
-    project: str | None = None
-
-    @classmethod
-    def load(cls, lq_dir: Path) -> LqConfig:
-        """Load config from config.yaml, falling back to defaults.
-
-        .. deprecated::
-            Use ``BlqConfig.load(lq_dir)`` instead.
-        """
-        import warnings
-
-        warnings.warn(
-            "LqConfig is deprecated. Use BlqConfig instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        config_path = lq_dir / CONFIG_FILE
-        if not config_path.exists():
-            return cls()
-
-        with open(config_path) as f:
-            data = yaml.safe_load(f) or {}
-
-        # Merge with defaults - config can extend or replace
-        capture_env = data.get("capture_env")
-        if capture_env is None:
-            capture_env = DEFAULT_CAPTURE_ENV.copy()
-        elif not isinstance(capture_env, list):
-            capture_env = DEFAULT_CAPTURE_ENV.copy()
-
-        # Load project info
-        project_data = data.get("project", {})
-        namespace = project_data.get("namespace")
-        project = project_data.get("project")
-
-        return cls(capture_env=capture_env, namespace=namespace, project=project)
-
-
-def save_config(lq_dir: Path, config: LqConfig) -> None:
-    """Save config to config.yaml.
-
-    .. deprecated::
-        Use ``BlqConfig.save()`` instead.
-    """
-    import warnings
-
-    warnings.warn(
-        "save_config is deprecated. Use BlqConfig.save() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    config_path = lq_dir / CONFIG_FILE
-    data = {"capture_env": config.capture_env}
-
-    # Include project info if present
-    if config.namespace or config.project:
-        data["project"] = {}
-        if config.namespace:
-            data["project"]["namespace"] = config.namespace
-        if config.project:
-            data["project"]["project"] = config.project
-
-    with open(config_path, "w") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-
-
 # ============================================================================
 # Unified Configuration (BlqConfig)
 # ============================================================================
@@ -589,14 +512,6 @@ class BlqConfig:
         """Save commands to commands.yaml."""
         if self._commands is not None:
             _save_commands_impl(self.lq_dir, self._commands)
-
-    def to_lq_config(self) -> LqConfig:
-        """Convert to legacy LqConfig for backward compatibility."""
-        return LqConfig(
-            capture_env=self.capture_env,
-            namespace=self.namespace,
-            project=self.project,
-        )
 
 
 # ============================================================================

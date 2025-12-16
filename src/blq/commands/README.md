@@ -39,13 +39,6 @@ The `core.py` module contains shared utilities used across multiple commands:
 - Log parsing: `parse_log_content()`
 - Execution context capture: `capture_environment()`, `capture_git_info()`, `capture_ci_info()`
 
-### Deprecated APIs
-
-The following are deprecated and will be removed in a future version:
-
-- `LqConfig` - use `BlqConfig` instead
-- `save_config()` - use `BlqConfig.save()` instead
-
 ## Backward Compatibility
 
 The main `cli.py` re-exports commonly used items from the commands modules to maintain backward compatibility with existing code and tests.

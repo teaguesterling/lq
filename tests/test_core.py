@@ -791,24 +791,3 @@ commands:
 
         config.reload_commands()
         assert config._commands is None
-
-
-class TestBlqConfigToLqConfig:
-    """Tests for backward compatibility with LqConfig."""
-
-    def test_to_lq_config(self, lq_dir):
-        """Convert to legacy LqConfig."""
-        from blq.commands.core import LqConfig
-
-        config = BlqConfig(
-            lq_dir=lq_dir,
-            capture_env=["TEST"],
-            namespace="ns",
-            project="proj",
-        )
-        lq_config = config.to_lq_config()
-
-        assert isinstance(lq_config, LqConfig)
-        assert lq_config.capture_env == ["TEST"]
-        assert lq_config.namespace == "ns"
-        assert lq_config.project == "proj"
