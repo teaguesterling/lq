@@ -29,7 +29,6 @@ from blq.commands.core import (
     format_command_help,
     get_next_run_id,
     parse_log_content,
-    parse_placeholders,
     write_run_parquet,
 )
 

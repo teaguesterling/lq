@@ -3,11 +3,10 @@
 import pytest
 
 from blq.commands.core import (
-    CommandPlaceholder,
+    RegisteredCommand,
     expand_command,
     format_command_help,
     parse_placeholders,
-    RegisteredCommand,
 )
 from blq.commands.execution import _parse_command_args
 
