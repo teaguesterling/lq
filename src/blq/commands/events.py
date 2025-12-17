@@ -46,8 +46,8 @@ def cmd_event(args: argparse.Namespace) -> None:
             print(f"  Severity: {event.get('severity', '?')}")
             print(f"  File: {event.get('file_path', '?')}:{event.get('line_number', '?')}")
             print(f"  Message: {event.get('message', '?')}")
-            if event.get("error_fingerprint"):
-                print(f"  Fingerprint: {event.get('error_fingerprint')}")
+            if event.get("fingerprint"):
+                print(f"  Fingerprint: {event.get('fingerprint')}")
             if event.get("log_line_start"):
                 print(f"  Log lines: {event.get('log_line_start')}-{event.get('log_line_end')}")
 

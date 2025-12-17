@@ -358,7 +358,7 @@ def _event_impl(ref: str) -> dict[str, Any] | None:
             "message": event_data.get("message"),
             "tool_name": event_data.get("tool_name"),
             "category": event_data.get("category"),
-            "error_fingerprint": event_data.get("error_fingerprint"),
+            "fingerprint": event_data.get("fingerprint"),
             "raw_text": event_data.get("raw_text"),
             "log_line_start": event_data.get("log_line_start"),
             "log_line_end": event_data.get("log_line_end"),
@@ -535,7 +535,7 @@ def _diff_impl(run1: int, run2: int) -> dict[str, Any]:
 
         # Use fingerprints for comparison if available, else use file+line+message
         def get_error_key(row):
-            fp = row.get("error_fingerprint")
+            fp = row.get("fingerprint")
             if fp:
                 return fp
             return f"{row.get('file_path')}:{row.get('line_number')}:{row.get('message', '')[:50]}"

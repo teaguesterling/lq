@@ -297,7 +297,7 @@ SELECT
     severity,
     lq_location(file_path, line_number, column_number) AS location,
     message,
-    error_fingerprint,
+    fingerprint,
     log_line_start,
     log_line_end
 FROM lq_events
@@ -313,7 +313,7 @@ SELECT
     lq_location(file_path, line_number, column_number) AS location,
     LEFT(message, 80) AS message
 FROM lq_events
-WHERE error_fingerprint = fp
+WHERE fingerprint = fp
 ORDER BY started_at DESC
 LIMIT n;
 
@@ -342,7 +342,7 @@ SELECT to_json(list(err)) FROM (
         message: message,
         tool: tool_name,
         category: category,
-        fingerprint: lq_short_fp(error_fingerprint),
+        fingerprint: lq_short_fp(fingerprint),
         log_lines: CASE WHEN log_line_start IS NOT NULL
                         THEN [log_line_start, log_line_end]
                         ELSE NULL END
