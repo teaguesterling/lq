@@ -7,8 +7,9 @@ This is the initial scaffolding for `blq` (Build Log Query) - a CLI tool for cap
 ### Completed
 - Python package structure with pyproject.toml (hatchling build)
 - CLI module (`src/blq/cli.py`) with all core commands
-- SQL schema with views and macros (`src/blq/schema.sql`)
-- Hive-partitioned parquet storage design
+- SQL schema with table-returning macros (`src/blq/schema.sql`)
+- blq.duckdb database file with pre-loaded macros
+- Hive-partitioned parquet storage design with zstd compression
 - Basic error/warning parsing fallback
 - Integration hooks for duck_hunt extension
 - Pythonic query API (`LogQuery`, `LogStore`, `LogQueryGrouped`)
@@ -24,7 +25,7 @@ This is the initial scaffolding for `blq` (Build Log Query) - a CLI tool for cap
 - Shell completions for bash, zsh, fish (`blq completions`)
 - List available log formats (`blq formats`)
 - Version flag (`blq --version`)
-- 182 unit tests
+- 234 unit tests
 - Comprehensive documentation (README, docs/)
 
 ### TODO
@@ -36,11 +37,33 @@ This is the initial scaffolding for `blq` (Build Log Query) - a CLI tool for cap
 ```
 blq (Python CLI)
     │
-    ├── Writes parquet files to .lq/logs/date=.../source=.../
+    ├── .lq/blq.duckdb     - Database with pre-loaded macros (blq_*)
+    │
+    ├── .lq/logs/          - Hive-partitioned parquet files (zstd compressed)
+    │   └── date=.../source=.../
     │
     ├── Uses duckdb Python API directly
     │
-    └── Optionally uses duck_hunt extension for 44+ format parsing
+    └── Optionally uses duck_hunt extension for 60+ format parsing
+```
+
+### SQL Schema (blq_ prefix)
+
+All SQL macros use the `blq_` prefix:
+
+| Macro | Description |
+|-------|-------------|
+| `blq_load_events()` | Load all events from parquet files |
+| `blq_load_runs()` | Aggregated run statistics |
+| `blq_status()` | Quick status overview |
+| `blq_errors(n)` | Recent errors (default: 10) |
+| `blq_warnings(n)` | Recent warnings (default: 10) |
+| `blq_history(n)` | Run history (default: 20) |
+| `blq_diff(run1, run2)` | Compare two runs |
+
+Direct DuckDB access:
+```bash
+duckdb .lq/blq.duckdb "SELECT * FROM blq_status()"
 ```
 
 ## Run Metadata
@@ -86,7 +109,7 @@ commands:
 Supports: GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI, Buildkite, Azure Pipelines
 
 ```sql
-SELECT ci['provider'], ci['run_id'] FROM lq_events WHERE ci IS NOT NULL
+SELECT ci['provider'], ci['run_id'] FROM blq_load_events() WHERE ci IS NOT NULL
 ```
 
 ## Project Identification
@@ -137,10 +160,12 @@ Runtime override: `blq run --no-capture <cmd>` or `blq run --capture <cmd>`
 1. **Parquet over DuckDB files**: Enables concurrent writes without locking
 2. **Hive partitioning**: Efficient date/source-based queries
 3. **Project-local storage**: `.lq/` directory in project root
-4. **Optional duck_hunt**: Works with basic parsing if extension not available
-5. **Python duckdb API**: No subprocess calls to duckdb CLI
-6. **MAP for variable data**: Environment and CI use MAP(VARCHAR, VARCHAR) for flexible keys
-7. **PyYAML required**: Clean YAML handling without fallbacks
+4. **blq.duckdb for macros**: Pre-loaded SQL macros for faster startup and direct CLI access
+5. **Table-returning macros**: `blq_load_events()` evaluated at query time, not view creation
+6. **Optional duck_hunt**: Works with basic parsing if extension not available
+7. **Python duckdb API**: No subprocess calls to duckdb CLI
+8. **MAP for variable data**: Environment and CI use MAP(VARCHAR, VARCHAR) for flexible keys
+9. **zstd compression**: Parquet files use zstd level 3 for ~40% smaller files than snappy
 
 ## Integration Points
 
