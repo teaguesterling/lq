@@ -372,6 +372,9 @@ class BlqConfig:
     # Lazy-loaded commands (private, access via commands property)
     _commands: dict | None = field(default=None, repr=False)
 
+    # Hooks configuration (private, access via hooks_config property)
+    _hooks_config: dict | None = field(default=None, repr=False)
+
     # Computed paths
     @property
     def logs_dir(self) -> Path:
@@ -417,6 +420,23 @@ class BlqConfig:
     def reload_commands(self) -> None:
         """Force reload of commands from disk."""
         self._commands = None
+
+    @property
+    def hooks_config(self) -> dict:
+        """Get hooks configuration.
+
+        Returns:
+            Dict with hooks configuration, or empty dict if not configured.
+        """
+        if self._hooks_config is None:
+            # Load from config.yaml
+            if self.config_path.exists():
+                with open(self.config_path) as f:
+                    data = yaml.safe_load(f) or {}
+                self._hooks_config = data.get("hooks", {})
+            else:
+                self._hooks_config = {}
+        return self._hooks_config
 
     @classmethod
     def find(cls, start_dir: Path | None = None) -> BlqConfig | None:
@@ -511,6 +531,10 @@ class BlqConfig:
                 data["project"]["namespace"] = self.namespace
             if self.project:
                 data["project"]["project"] = self.project
+
+        # Include hooks config if present
+        if self._hooks_config:
+            data["hooks"] = self._hooks_config
 
         with open(self.config_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)

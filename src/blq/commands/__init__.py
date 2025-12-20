@@ -6,6 +6,14 @@ This module provides modular command implementations for the blq CLI.
 
 from blq.commands.events import cmd_context, cmd_event
 from blq.commands.execution import cmd_capture, cmd_exec, cmd_import, cmd_run
+from blq.commands.hooks_cmd import (
+    cmd_hooks_add,
+    cmd_hooks_install,
+    cmd_hooks_list,
+    cmd_hooks_remove,
+    cmd_hooks_run,
+    cmd_hooks_status,
+)
 from blq.commands.init_cmd import cmd_init
 from blq.commands.management import (
     cmd_completions,
@@ -30,6 +38,13 @@ __all__ = [
     "cmd_exec",
     "cmd_import",
     "cmd_capture",
+    # Hooks
+    "cmd_hooks_install",
+    "cmd_hooks_remove",
+    "cmd_hooks_status",
+    "cmd_hooks_run",
+    "cmd_hooks_add",
+    "cmd_hooks_list",
     # Query
     "cmd_query",
     "cmd_filter",

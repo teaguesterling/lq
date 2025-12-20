@@ -54,6 +54,12 @@ from blq.commands import (
     cmd_filter,
     cmd_formats,
     cmd_history,
+    cmd_hooks_add,
+    cmd_hooks_install,
+    cmd_hooks_list,
+    cmd_hooks_remove,
+    cmd_hooks_run,
+    cmd_hooks_status,
     cmd_import,
     cmd_init,
     cmd_prune,
@@ -472,6 +478,44 @@ def main() -> None:
         "--port", "-p", type=int, default=8080, help="Port for SSE transport (default: 8080)"
     )
     p_serve.set_defaults(func=cmd_serve)
+
+    # =========================================================================
+    # Hooks commands
+    # =========================================================================
+
+    p_hooks_install = subparsers.add_parser(
+        "hooks-install", help="Install git pre-commit hook"
+    )
+    p_hooks_install.add_argument(
+        "--force", "-f", action="store_true", help="Overwrite existing hook"
+    )
+    p_hooks_install.set_defaults(func=cmd_hooks_install)
+
+    p_hooks_remove = subparsers.add_parser(
+        "hooks-remove", help="Remove git pre-commit hook"
+    )
+    p_hooks_remove.set_defaults(func=cmd_hooks_remove)
+
+    p_hooks_status = subparsers.add_parser(
+        "hooks-status", help="Show git hook status"
+    )
+    p_hooks_status.set_defaults(func=cmd_hooks_status)
+
+    p_hooks_run = subparsers.add_parser(
+        "hooks-run", help="Run pre-commit hook commands (called by git hook)"
+    )
+    p_hooks_run.set_defaults(func=cmd_hooks_run)
+
+    p_hooks_add = subparsers.add_parser(
+        "hooks-add", help="Add a command to pre-commit hook"
+    )
+    p_hooks_add.add_argument("command", help="Command name to add")
+    p_hooks_add.set_defaults(func=cmd_hooks_add)
+
+    p_hooks_list = subparsers.add_parser(
+        "hooks-list", help="List commands in pre-commit hook"
+    )
+    p_hooks_list.set_defaults(func=cmd_hooks_list)
 
     args = parser.parse_args()
 
