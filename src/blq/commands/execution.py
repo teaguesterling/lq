@@ -175,6 +175,14 @@ def _execute_command(
     else:
         status = "OK"
 
+    # Build output stats for visibility when no events are parsed
+    tail_lines = 5
+    output_stats = {
+        "lines": len(output_lines),
+        "bytes": len(output),
+        "tail": [ln.rstrip("\n\r") for ln in output_lines[-tail_lines:]],
+    }
+
     return RunResult(
         run_id=run_id,
         command=command,
@@ -191,6 +199,7 @@ def _execute_command(
         errors=[_make_event_summary(run_id, e) for e in error_events[:error_limit]],
         warnings=[_make_event_summary(run_id, e) for e in warning_events[:error_limit]],
         parquet_path=str(filepath),
+        output_stats=output_stats,
     )
 
 

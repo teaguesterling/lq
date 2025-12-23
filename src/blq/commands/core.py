@@ -109,6 +109,7 @@ class RunResult:
     errors: list[EventSummary] = field(default_factory=list)
     warnings: list[EventSummary] = field(default_factory=list)
     parquet_path: str | None = None
+    output_stats: dict[str, int | list[str]] = field(default_factory=dict)
 
     def to_json(self, include_warnings: bool = False) -> str:
         """Convert to JSON string."""
@@ -125,6 +126,8 @@ class RunResult:
         }
         if include_warnings:
             data["warnings"] = [asdict(w) for w in self.warnings]
+        if self.output_stats:
+            data["output_stats"] = self.output_stats
         return json.dumps(data, indent=2)
 
     def to_markdown(self, include_warnings: bool = False) -> str:
