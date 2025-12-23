@@ -83,6 +83,15 @@ blq context 1:3
 | `blq status` | Show status of all sources |
 | `blq history` | Show run history |
 
+### CI Integration
+
+| Command | Description |
+|---------|-------------|
+| `blq ci check` | Compare errors against baseline, exit 0/1 for CI gates |
+| `blq ci comment` | Post error summary as GitHub PR comment |
+| `blq report` | Generate markdown report of build/test results |
+| `blq watch` | Watch for file changes and auto-run commands |
+
 ### Management
 
 | Command | Description |
@@ -199,6 +208,58 @@ blq commands
 
 **Auto-detected build systems:** Makefile, package.json (npm/yarn), pyproject.toml, Cargo.toml, go.mod, CMakeLists.txt, configure, build.gradle, pom.xml, Dockerfile, docker-compose.yml
 
+**Format auto-detection:** When registering commands, blq automatically detects the appropriate log format based on the command (e.g., `mypy` → `mypy_text`, `pytest` → `pytest_text`).
+
+## CI Integration
+
+blq provides commands for CI/CD pipeline integration:
+
+```bash
+# Check for new errors vs baseline (exits 1 if new errors found)
+blq ci check                          # Auto-detect baseline from main/master
+blq ci check --baseline main          # Compare against specific branch
+blq ci check --baseline 42            # Compare against run ID
+blq ci check --fail-on-any            # Fail if any errors (no baseline)
+
+# Post error summary as PR comment (requires GITHUB_TOKEN)
+blq ci comment                        # Create new comment
+blq ci comment --update               # Update existing blq comment
+blq ci comment --diff --baseline main # Include diff vs baseline
+
+# Generate markdown report
+blq report                            # Report on latest run
+blq report --baseline main            # Include comparison
+blq report --output report.md         # Save to file
+blq report --summary-only             # Summary without error details
+```
+
+### GitHub Actions Example
+
+```yaml
+- name: Run tests
+  run: blq run test
+
+- name: Check for regressions
+  run: blq ci check --baseline main
+
+- name: Post results
+  if: github.event_name == 'pull_request'
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: blq ci comment --update --diff
+```
+
+## Watch Mode
+
+Automatically run commands when files change:
+
+```bash
+blq watch build              # Watch and run 'build' on changes
+blq watch test --debounce 500  # Custom debounce (ms)
+blq watch lint --exclude "*.log,dist/*"  # Exclude patterns
+blq watch --once build       # Run once then exit (for CI)
+```
+
 ## Run Metadata
 
 Each `blq run` automatically captures execution context:
@@ -228,7 +289,7 @@ blq serve                    # stdio transport (Claude Desktop)
 blq serve --transport sse    # HTTP/SSE transport
 ```
 
-Tools available: `run`, `query`, `errors`, `warnings`, `event`, `context`, `status`, `history`, `diff`
+Tools available: `run`, `exec`, `query`, `errors`, `warnings`, `event`, `context`, `status`, `history`, `diff`, `register_command`, `unregister_command`, `list_commands`
 
 See [MCP Guide](docs/mcp.md) for details.
 
