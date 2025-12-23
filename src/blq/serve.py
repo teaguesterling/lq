@@ -597,10 +597,12 @@ def _register_command_impl(
     timeout: int = 300,
     capture: bool = True,
     force: bool = False,
+    format: str | None = None,
 ) -> dict[str, Any]:
     """Implementation of register_command."""
     try:
         from blq.cli import BlqConfig, RegisteredCommand
+        from blq.commands.core import detect_format_from_command
 
         config = BlqConfig.find()
 
@@ -615,12 +617,17 @@ def _register_command_impl(
                 "error": f"Command '{name}' already exists. Use force=true to overwrite.",
             }
 
+        # Auto-detect format if not specified
+        if format is None:
+            format = detect_format_from_command(cmd)
+
         commands[name] = RegisteredCommand(
             name=name,
             cmd=cmd,
             description=description,
             timeout=timeout,
             capture=capture,
+            format=format,
         )
         config.save_commands()
 
@@ -633,6 +640,7 @@ def _register_command_impl(
                 "description": description,
                 "timeout": timeout,
                 "capture": capture,
+                "format": format,
             },
         }
     except Exception as e:
@@ -682,6 +690,7 @@ def _list_commands_impl() -> dict[str, Any]:
                     "description": cmd.description,
                     "timeout": cmd.timeout,
                     "capture": cmd.capture,
+                    "format": cmd.format,
                 }
                 for name, cmd in commands.items()
             ]
@@ -859,6 +868,7 @@ def register_command(
     timeout: int = 300,
     capture: bool = True,
     force: bool = False,
+    format: str | None = None,
 ) -> dict[str, Any]:
     """Register a new command.
 
@@ -869,11 +879,12 @@ def register_command(
         timeout: Timeout in seconds (default: 300)
         capture: Whether to capture and parse logs (default: true)
         force: Overwrite existing command if it exists
+        format: Log format for parsing (auto-detected from command if not specified)
 
     Returns:
         Success status and registered command details
     """
-    return _register_command_impl(name, cmd, description, timeout, capture, force)
+    return _register_command_impl(name, cmd, description, timeout, capture, force, format)
 
 
 @mcp.tool()

@@ -616,6 +616,93 @@ class BlqConfig:
 # Command Registry
 # ============================================================================
 
+# Command name patterns mapped to format hints
+# Keys are substrings/patterns to match in the command, values are format names
+COMMAND_FORMAT_HINTS: dict[str, str] = {
+    # Python tools
+    "pytest": "pytest_text",
+    "python -m pytest": "pytest_text",
+    "mypy": "mypy_text",
+    "ruff": "generic_lint",
+    "flake8": "flake8_text",
+    "pylint": "pylint_text",
+    "black": "black_text",
+    "autopep8": "autopep8_text",
+    "yapf": "yapf_text",
+    "bandit": "bandit_json",
+    # Rust tools
+    "cargo test": "cargo_test_json",
+    "cargo build": "cargo_build",
+    "cargo clippy": "clippy_json",
+    # JavaScript/TypeScript
+    "npm test": "mocha_chai_text",
+    "yarn test": "mocha_chai_text",
+    "jest": "mocha_chai_text",
+    "mocha": "mocha_chai_text",
+    "eslint": "eslint_json",
+    # Go
+    "go test": "gotest_json",
+    # Build systems
+    "make": "make_error",
+    "cmake": "cmake_build",
+    "bazel": "bazel_build",
+    "gradle": "gradle_build",
+    "mvn": "maven_build",
+    "maven": "maven_build",
+    "msbuild": "msbuild",
+    # Other linters
+    "shellcheck": "shellcheck_json",
+    "hadolint": "hadolint_json",
+    "yamllint": "yamllint_json",
+    "sqlfluff": "sqlfluff_json",
+    "terraform": "terraform_text",
+    "tflint": "tflint_json",
+    "tfsec": "tfsec_json",
+    # CI/tools
+    "gh ": "github_cli",
+    "ansible": "ansible_text",
+    "docker": "node_build",  # Docker build output is similar
+    # Ruby
+    "rspec": "rspec_text",
+    "rubocop": "rubocop_json",
+    # Other
+    "trivy": "trivy_json",
+    "valgrind": "valgrind",
+    "gdb": "gdb_lldb",
+    "lldb": "gdb_lldb",
+}
+
+
+def detect_format_from_command(cmd: str) -> str:
+    """Detect the best format hint based on the command string.
+
+    Analyzes the command to identify known tools and returns the
+    appropriate format for parsing their output.
+
+    Args:
+        cmd: The command string to analyze
+
+    Returns:
+        Format name if a known tool is detected, "auto" otherwise
+
+    Examples:
+        >>> detect_format_from_command("python -m pytest tests/")
+        'pytest_text'
+        >>> detect_format_from_command("mypy src/")
+        'mypy_text'
+        >>> detect_format_from_command("unknown-tool")
+        'auto'
+    """
+    cmd_lower = cmd.lower()
+
+    # Check for specific patterns (longer patterns first for specificity)
+    # Sort by length descending to match more specific patterns first
+    for pattern in sorted(COMMAND_FORMAT_HINTS.keys(), key=len, reverse=True):
+        if pattern in cmd_lower:
+            return COMMAND_FORMAT_HINTS[pattern]
+
+    return "auto"
+
 
 @dataclass
 class RegisteredCommand:
