@@ -398,6 +398,9 @@ class BlqConfig:
     namespace: str | None = None
     project: str | None = None
 
+    # Storage mode: "parquet" (v1) or "bird" (v2)
+    storage_mode: str = "parquet"
+
     # Lazy-loaded commands (private, access via commands property)
     _commands: dict | None = field(default=None, repr=False)
 
@@ -437,6 +440,11 @@ class BlqConfig:
     def commands_path(self) -> Path:
         """Path to commands file (.lq/commands.yaml)."""
         return self.lq_dir / COMMANDS_FILE
+
+    @property
+    def use_bird(self) -> bool:
+        """Check if BIRD storage mode is enabled."""
+        return self.storage_mode == "bird"
 
     @property
     def commands(self) -> dict:
@@ -542,6 +550,7 @@ class BlqConfig:
         capture_env = DEFAULT_CAPTURE_ENV.copy()
         namespace = None
         project = None
+        storage_mode = "parquet"  # Default to v1 mode for backward compatibility
 
         # Load from config.yaml if it exists
         if config_path.exists():
@@ -558,11 +567,16 @@ class BlqConfig:
             namespace = project_data.get("namespace")
             project = project_data.get("project")
 
+            # Load storage mode
+            storage_data = data.get("storage", {})
+            storage_mode = storage_data.get("mode", "parquet")
+
         return cls(
             lq_dir=lq_dir,
             capture_env=capture_env,
             namespace=namespace,
             project=project,
+            storage_mode=storage_mode,
         )
 
     @classmethod
@@ -590,6 +604,10 @@ class BlqConfig:
     def save(self) -> None:
         """Save configuration to config.yaml."""
         data: dict[str, Any] = {"capture_env": self.capture_env}
+
+        # Include storage mode
+        if self.storage_mode != "parquet":
+            data["storage"] = {"mode": self.storage_mode}
 
         # Include project info if present
         if self.namespace or self.project:

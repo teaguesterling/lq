@@ -28,6 +28,7 @@ from blq.commands.core import (
     RegisteredCommand,
     detect_project_info,
 )
+from blq.bird import BirdStore
 
 # Detection mode constants
 DETECT_NONE = "none"
@@ -683,7 +684,7 @@ def _create_placeholder_parquet(lq_dir: Path) -> None:
     conn.close()
 
 
-def _create_database(lq_dir: Path) -> bool:
+def _create_database(lq_dir: Path, use_bird: bool = False) -> bool:
     """Create blq.duckdb with schema macros.
 
     The schema uses table-returning macros (e.g., blq_load_events()) which
@@ -692,6 +693,7 @@ def _create_database(lq_dir: Path) -> bool:
 
     Args:
         lq_dir: Path to .lq directory
+        use_bird: If True, create BIRD schema instead of parquet schema
 
     Returns:
         True if database was created/updated successfully
@@ -701,7 +703,12 @@ def _create_database(lq_dir: Path) -> bool:
     db_path = lq_dir / DB_FILE
 
     try:
-        # Load schema SQL
+        if use_bird:
+            # BIRD mode: use BirdStore to create schema
+            BirdStore._ensure_schema(duckdb.connect(str(db_path)), lq_dir)
+            return True
+
+        # Legacy parquet mode: Load schema SQL
         schema_content = resources.files("blq").joinpath("schema.sql").read_text()
 
         # Split into individual statements
@@ -758,6 +765,7 @@ def cmd_init(args: argparse.Namespace) -> None:
     detect_mode = getattr(args, "detect_mode", DETECT_AUTO)
     auto_yes = getattr(args, "yes", False)
     force_reinit = getattr(args, "force", False)
+    use_bird = getattr(args, "bird", False)
 
     if lq_dir.exists():
         if force_reinit:
@@ -786,18 +794,32 @@ def cmd_init(args: argparse.Namespace) -> None:
     (lq_dir / LOGS_DIR).mkdir(parents=True)
     (lq_dir / RAW_DIR).mkdir(parents=True)
 
-    # Copy schema file from package (human-readable reference)
-    try:
-        schema_content = resources.files("blq").joinpath("schema.sql").read_text()
-        (lq_dir / SCHEMA_FILE).write_text(schema_content)
-    except Exception as e:
-        print(f"Warning: Could not copy schema.sql: {e}", file=sys.stderr)
+    # Storage mode
+    storage_mode = "bird" if use_bird else "parquet"
 
-    # Create placeholder parquet file (required for schema macros to validate)
-    _create_placeholder_parquet(lq_dir)
+    if use_bird:
+        # BIRD mode: create blob directory instead of parquet structure
+        (lq_dir / "blobs" / "content").mkdir(parents=True)
+        # Copy BIRD schema file
+        try:
+            schema_content = resources.files("blq").joinpath("bird_schema.sql").read_text()
+            (lq_dir / SCHEMA_FILE).write_text(schema_content)
+        except Exception as e:
+            print(f"Warning: Could not copy bird_schema.sql: {e}", file=sys.stderr)
+    else:
+        # Legacy parquet mode
+        # Copy schema file from package (human-readable reference)
+        try:
+            schema_content = resources.files("blq").joinpath("schema.sql").read_text()
+            (lq_dir / SCHEMA_FILE).write_text(schema_content)
+        except Exception as e:
+            print(f"Warning: Could not copy schema.sql: {e}", file=sys.stderr)
+
+        # Create placeholder parquet file (required for schema macros to validate)
+        _create_placeholder_parquet(lq_dir)
 
     # Create database with schema (views and macros pre-loaded)
-    _create_database(lq_dir)
+    _create_database(lq_dir, use_bird=use_bird)
 
     # Detect project info from git remote (can be overridden)
     project_info = detect_project_info()
@@ -810,6 +832,7 @@ def cmd_init(args: argparse.Namespace) -> None:
         lq_dir=lq_dir,
         namespace=namespace,
         project=project,
+        storage_mode=storage_mode,
     )
     config.save()
 
@@ -817,13 +840,21 @@ def cmd_init(args: argparse.Namespace) -> None:
     _ensure_commands_file(lq_dir)
 
     print(f"Initialized .lq at {lq_dir}")
-    print("  logs/         - Hive-partitioned parquet files")
+    if use_bird:
+        print("  blobs/        - Content-addressed blob storage")
+        print("  blq.duckdb    - BIRD database (invocations, events)")
+    else:
+        print("  logs/         - Hive-partitioned parquet files")
+        print("  blq.duckdb    - Database with views and macros")
     print("  raw/          - Raw log files (optional)")
-    print("  blq.duckdb    - Database with views and macros")
     print("  schema.sql    - SQL schema (reference)")
     print("  commands.yaml - Registered commands")
     if namespace and project:
         print(f"  project       - {namespace}/{project}")
+    if use_bird:
+        print(f"  storage       - BIRD (DuckDB tables)")
+    else:
+        print(f"  storage       - Parquet (legacy)")
 
     # Install required extensions
     _install_extensions()

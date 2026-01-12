@@ -16,6 +16,7 @@ from blq.commands.hooks_cmd import (
     cmd_hooks_status,
 )
 from blq.commands.init_cmd import cmd_init
+from blq.commands.migrate import cmd_migrate
 from blq.commands.management import (
     cmd_completions,
     cmd_errors,
@@ -36,6 +37,8 @@ from blq.commands.watch_cmd import cmd_watch
 __all__ = [
     # Init
     "cmd_init",
+    # Migration
+    "cmd_migrate",
     # CI
     "cmd_ci_check",
     "cmd_ci_comment",

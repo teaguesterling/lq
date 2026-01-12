@@ -31,6 +31,7 @@ from blq.commands.core import (
     parse_log_content,
     write_run_parquet,
 )
+from blq.bird import write_bird_invocation
 
 # Logger for lq status messages
 logger = logging.getLogger("blq-cli")
@@ -160,7 +161,16 @@ def _execute_command(
         "session_id": session_id,
     }
 
-    filepath = write_run_parquet(events, run_meta, lq_dir)
+    # Write using appropriate storage backend
+    if config.use_bird:
+        # BIRD storage mode - write to DuckDB tables
+        output_bytes = output.encode("utf-8") if keep_raw else None
+        inv_id, filepath = write_bird_invocation(events, run_meta, lq_dir, output_bytes)
+        # For BIRD mode, we use a sequential run number for display
+        # but the actual ID is a UUID stored in inv_id
+    else:
+        # Legacy parquet storage mode
+        filepath = write_run_parquet(events, run_meta, lq_dir)
 
     # Build structured result
     error_events = [e for e in events if e.get("severity") == "error"]

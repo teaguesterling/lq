@@ -64,6 +64,7 @@ from blq.commands import (
     cmd_hooks_status,
     cmd_import,
     cmd_init,
+    cmd_migrate,
     cmd_prune,
     cmd_query,
     cmd_register,
@@ -229,6 +230,11 @@ def main() -> None:
         "-f",
         action="store_true",
         help="Reinitialize config files (schema, config) without deleting data",
+    )
+    p_init.add_argument(
+        "--bird",
+        action="store_true",
+        help="Use BIRD storage mode (DuckDB tables instead of parquet files)",
     )
     p_init.set_defaults(func=cmd_init)
 
@@ -444,6 +450,37 @@ def main() -> None:
     p_sync.add_argument("--status", action="store_true", help="Show current sync status")
     p_sync.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     p_sync.set_defaults(func=cmd_sync)
+
+    # migrate
+    p_migrate = subparsers.add_parser("migrate", help="Migrate data between storage formats")
+    p_migrate.add_argument(
+        "--to-bird",
+        action="store_true",
+        help="Migrate parquet data to BIRD storage format",
+    )
+    p_migrate.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be migrated without making changes",
+    )
+    p_migrate.add_argument(
+        "--keep-parquet",
+        action="store_true",
+        help="Keep parquet files after migration",
+    )
+    p_migrate.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Force migration even if already using BIRD mode",
+    )
+    p_migrate.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Show detailed progress",
+    )
+    p_migrate.set_defaults(func=cmd_migrate)
 
     # query (with alias 'q')
     p_query = subparsers.add_parser("query", aliases=["q"], help="Query log files or stored events")
